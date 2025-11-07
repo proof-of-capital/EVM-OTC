@@ -6,7 +6,6 @@ pragma solidity ^0.8.29;
  * @notice Constants used in the OTC contract
  */
 library OTCConstants {
-
     uint64 public constant PROPOSE_FARM_ACCOUNT_LOCK_PERIOD = 10 days;
     uint64 public constant SUPPLY_LOCK_PERIOD = 10 days;
     uint64 public constant TOTAL_LOCK_PERIOD = 120 days; // ~4 months

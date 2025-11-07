@@ -32,7 +32,7 @@ contract OTC is IOTC, ReentrancyGuard {
     uint256 public immutable override BUYBACK_PRICE;
     uint256 public immutable override MIN_INPUT_AMOUNT;
     uint256 public immutable override MIN_OUTPUT_AMOUNT;
-    
+
     uint64 public override supplyLockEndTime;
     uint64 public override totalLockEndTime;
     uint64 public override proposedTime;
@@ -147,7 +147,7 @@ contract OTC is IOTC, ReentrancyGuard {
      * @param amount Amount of tokens to deposit
      * @dev Automatically checks if minimum amount is reached and transitions state
      */
-    function depositToken(uint256 amount) external override nonReentrant  inState(OTCConstants.STATE_FUNDING) {
+    function depositToken(uint256 amount) external override nonReentrant inState(OTCConstants.STATE_FUNDING) {
         require(IS_SUPPLY, IOTC.InvalidState(currentState, OTCConstants.STATE_FUNDING));
         require(INPUT_TOKEN != address(0), IOTC.InputTokenIsEth());
 
@@ -175,7 +175,7 @@ contract OTC is IOTC, ReentrancyGuard {
 
         uint256 balanceAfter = IERC20(OUTPUT_TOKEN).balanceOf(address(this));
 
-        emit DepositedOutput(msg.sender,amount);
+        emit DepositedOutput(msg.sender, amount);
 
         if (balanceAfter >= MIN_OUTPUT_AMOUNT) {
             _changeState(OTCConstants.STATE_SUPPLY_PROVIDED);

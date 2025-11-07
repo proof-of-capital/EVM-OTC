@@ -467,7 +467,7 @@ contract OTCTest is Test {
     function test_WithdrawEth_RevertsIfEthTransferFails() public {
         // Deploy OTC with a contract that rejects ETH as client
         RejectingEthContract rejectingClient = new RejectingEthContract();
-        
+
         vm.prank(admin);
         OTC otcWithRejectingClient = new OTC(
             address(0), // ETH
@@ -614,19 +614,19 @@ contract OTCTest is Test {
 
         uint256 totalLockEnd = otcDemand.totalLockEndTime();
         uint256 supplyLockEnd = otcDemand.supplyLockEndTime();
-        
+
         // To test TotalLockActive (second require), we need:
         // 1. First check passes: block.timestamp > supplyLockEndTime
         // 2. Second check fails: block.timestamp <= totalLockEndTime
-        
+
         // For demand-side: totalLockEndTime >= supplyLockEndTime
         // We need to warp to after supplyLockEndTime but at/before totalLockEndTime
-        
+
         // Warp to exactly totalLockEndTime
         // This ensures block.timestamp > supplyLockEndTime (if totalLockEnd > supplyLockEnd)
         // but block.timestamp == totalLockEndTime, so second check fails
         vm.warp(totalLockEnd);
-        
+
         // Verify that we're past supplyLockEndTime
         if (totalLockEnd > supplyLockEnd) {
             // First check (SupplyLockActive) passes, second check (TotalLockActive) fails
@@ -653,25 +653,25 @@ contract OTCTest is Test {
     function test_WithdrawOutput_RevertsIfSupplyLockActive() public {
         // Now that SupplyLockActive check is first, we can test it directly
         // by setting timestamp to supplyLockEndTime or before
-        
+
         vm.startPrank(user1);
         outputToken.approve(address(otcDemand), MIN_OUTPUT_AMOUNT);
         otcDemand.depositOutput(MIN_OUTPUT_AMOUNT);
         vm.stopPrank();
-        
+
         uint256 supplyLockEnd = otcDemand.supplyLockEndTime();
-        
+
         // Test when block.timestamp is exactly at supplyLockEndTime
         // This should fail the first require (SupplyLockActive) since require checks > not >=
         vm.warp(supplyLockEnd);
-        
+
         vm.prank(client);
         vm.expectRevert(IOTC.SupplyLockActive.selector);
         otcDemand.withdrawOutput(50 ether);
-        
+
         // Also test when block.timestamp is before supplyLockEndTime
         vm.warp(supplyLockEnd - 1);
-        
+
         vm.prank(client);
         vm.expectRevert(IOTC.SupplyLockActive.selector);
         otcDemand.withdrawOutput(50 ether);
@@ -769,10 +769,10 @@ contract OTCTest is Test {
         // Deploy OTC with a contract that rejects ETH as admin
         // First deploy the rejecting contract as the admin
         RejectingEthContract rejectingAdmin = new RejectingEthContract();
-        
+
         // Mint output tokens to rejectingAdmin contract
         outputToken.mint(address(rejectingAdmin), 1000 ether);
-        
+
         // Deploy OTC with rejectingAdmin as admin
         vm.prank(address(rejectingAdmin));
         OTC otcWithRejectingAdmin = new OTC(
@@ -803,10 +803,7 @@ contract OTCTest is Test {
     function test_ProposeFarmAccount_Success() public {
         _setupToSupplyProvided(otc);
 
-        IOTC.FarmWithdrawData memory farmData = IOTC.FarmWithdrawData({
-            farmAccount: farmAccount,
-            sendData: ""
-        });
+        IOTC.FarmWithdrawData memory farmData = IOTC.FarmWithdrawData({farmAccount: farmAccount, sendData: ""});
 
         vm.prank(admin);
         otc.proposeFarmAccount(farmData);
@@ -818,10 +815,7 @@ contract OTCTest is Test {
     function test_ProposeFarmAccount_EmitsEvents() public {
         _setupToSupplyProvided(otc);
 
-        IOTC.FarmWithdrawData memory farmData = IOTC.FarmWithdrawData({
-            farmAccount: farmAccount,
-            sendData: ""
-        });
+        IOTC.FarmWithdrawData memory farmData = IOTC.FarmWithdrawData({farmAccount: farmAccount, sendData: ""});
 
         vm.prank(admin);
         vm.expectEmit(true, false, false, true);
@@ -832,10 +826,7 @@ contract OTCTest is Test {
     function test_ProposeFarmAccount_RevertsIfNotAdmin() public {
         _setupToSupplyProvided(otc);
 
-        IOTC.FarmWithdrawData memory farmData = IOTC.FarmWithdrawData({
-            farmAccount: farmAccount,
-            sendData: ""
-        });
+        IOTC.FarmWithdrawData memory farmData = IOTC.FarmWithdrawData({farmAccount: farmAccount, sendData: ""});
 
         vm.prank(user1);
         vm.expectRevert(IOTC.OnlyAdmin.selector);
@@ -843,10 +834,7 @@ contract OTCTest is Test {
     }
 
     function test_ProposeFarmAccount_RevertsIfWrongState() public {
-        IOTC.FarmWithdrawData memory farmData = IOTC.FarmWithdrawData({
-            farmAccount: farmAccount,
-            sendData: ""
-        });
+        IOTC.FarmWithdrawData memory farmData = IOTC.FarmWithdrawData({farmAccount: farmAccount, sendData: ""});
 
         vm.prank(admin);
         vm.expectRevert(
@@ -954,7 +942,9 @@ contract OTCTest is Test {
         vm.prank(client);
         vm.expectRevert(
             abi.encodeWithSelector(
-                IOTC.InvalidState.selector, OTCConstants.STATE_CLIENT_REJECTED, OTCConstants.STATE_WAITING_FOR_CLIENT_ANSWER
+                IOTC.InvalidState.selector,
+                OTCConstants.STATE_CLIENT_REJECTED,
+                OTCConstants.STATE_WAITING_FOR_CLIENT_ANSWER
             )
         );
         otc.voteNo();
@@ -1032,7 +1022,9 @@ contract OTCTest is Test {
         vm.prank(admin);
         vm.expectRevert(
             abi.encodeWithSelector(
-                IOTC.InvalidState.selector, OTCConstants.STATE_WAITING_FOR_CLIENT_ANSWER, OTCConstants.STATE_CLIENT_ACCEPTED
+                IOTC.InvalidState.selector,
+                OTCConstants.STATE_WAITING_FOR_CLIENT_ANSWER,
+                OTCConstants.STATE_CLIENT_ACCEPTED
             )
         );
         otc.sendToFarm();
@@ -1062,8 +1054,7 @@ contract OTCTest is Test {
         // Create a contract that will revert on call
         RevertingFarmContract revertingFarm = new RevertingFarmContract();
         IOTC.FarmWithdrawData memory farmData = IOTC.FarmWithdrawData({
-            farmAccount: address(revertingFarm),
-            sendData: abi.encodeWithSelector(RevertingFarmContract.fail.selector)
+            farmAccount: address(revertingFarm), sendData: abi.encodeWithSelector(RevertingFarmContract.fail.selector)
         });
 
         // Deploy new otc instance and go through flow
@@ -1214,7 +1205,9 @@ contract OTCTest is Test {
         inputToken.approve(address(otc), 100 ether);
         vm.expectRevert(
             abi.encodeWithSelector(
-                IOTC.InvalidState.selector, OTCConstants.STATE_SUPPLY_PROVIDED, OTCConstants.STATE_WAITING_FOR_CLIENT_ANSWER
+                IOTC.InvalidState.selector,
+                OTCConstants.STATE_SUPPLY_PROVIDED,
+                OTCConstants.STATE_WAITING_FOR_CLIENT_ANSWER
             )
         );
         otc.buybackWithToken(100 ether);
@@ -1239,17 +1232,17 @@ contract OTCTest is Test {
 
         uint256 inputAmount = 100 ether;
         uint256 outputAmount = (inputAmount * OTCConstants.NOMINATOR) / BUYBACK_PRICE;
-        
+
         // Get current balance in contract
         uint256 contractBalance = outputToken.balanceOf(address(otc));
-        
+
         // Calculate amount to burn/transfer to make balance insufficient
         uint256 amountToRemove = contractBalance - outputAmount + 1 ether;
-        
+
         // Use burn to reduce contract balance
         // MockERC20 has burn function that can be called on any address
         outputToken.burn(address(otc), amountToRemove);
-        
+
         // Now contract has insufficient balance
         vm.startPrank(admin);
         inputToken.approve(address(otc), inputAmount);
@@ -1341,7 +1334,9 @@ contract OTCTest is Test {
         vm.prank(admin);
         vm.expectRevert(
             abi.encodeWithSelector(
-                IOTC.InvalidState.selector, OTCConstants.STATE_SUPPLY_PROVIDED, OTCConstants.STATE_WAITING_FOR_CLIENT_ANSWER
+                IOTC.InvalidState.selector,
+                OTCConstants.STATE_SUPPLY_PROVIDED,
+                OTCConstants.STATE_WAITING_FOR_CLIENT_ANSWER
             )
         );
         otcEth.buybackWithEth{value: 1 ether}();
@@ -1365,16 +1360,16 @@ contract OTCTest is Test {
 
         uint256 inputAmount = 1 ether;
         uint256 outputAmount = (inputAmount * OTCConstants.NOMINATOR) / BUYBACK_PRICE;
-        
+
         // Get current balance in contract
         uint256 contractBalance = outputToken.balanceOf(address(otcEth));
-        
+
         // Calculate amount to burn to make balance insufficient
         uint256 amountToRemove = contractBalance - outputAmount + 1 ether;
-        
+
         // Use burn to reduce contract balance
         outputToken.burn(address(otcEth), amountToRemove);
-        
+
         // Now contract has insufficient balance
         vm.deal(admin, 10 ether);
         vm.prank(admin);
@@ -1398,10 +1393,7 @@ contract OTCTest is Test {
         assertEq(otcEth.currentState(), OTCConstants.STATE_SUPPLY_PROVIDED);
 
         // 3. Propose farm account
-        IOTC.FarmWithdrawData memory farmData = IOTC.FarmWithdrawData({
-            farmAccount: farmAccount,
-            sendData: ""
-        });
+        IOTC.FarmWithdrawData memory farmData = IOTC.FarmWithdrawData({farmAccount: farmAccount, sendData: ""});
         vm.prank(admin);
         otcEth.proposeFarmAccount(farmData);
 
@@ -1432,10 +1424,7 @@ contract OTCTest is Test {
         _processAllSupplies(otc);
 
         // 3. Propose farm account
-        IOTC.FarmWithdrawData memory farmData = IOTC.FarmWithdrawData({
-            farmAccount: farmAccount,
-            sendData: ""
-        });
+        IOTC.FarmWithdrawData memory farmData = IOTC.FarmWithdrawData({farmAccount: farmAccount, sendData: ""});
         vm.prank(admin);
         otc.proposeFarmAccount(farmData);
 
@@ -1507,10 +1496,7 @@ contract OTCTest is Test {
     function _setupToWaitingForClientAnswer(OTC contractInstance) internal {
         _setupToSupplyProvided(contractInstance);
 
-        IOTC.FarmWithdrawData memory farmData = IOTC.FarmWithdrawData({
-            farmAccount: farmAccount,
-            sendData: ""
-        });
+        IOTC.FarmWithdrawData memory farmData = IOTC.FarmWithdrawData({farmAccount: farmAccount, sendData: ""});
 
         vm.prank(contractInstance.ADMIN_ADDRESS());
         contractInstance.proposeFarmAccount(farmData);
@@ -1556,25 +1542,25 @@ contract OTCTest is Test {
     function test_OnlyAdminOrClient_SuccessAsAdmin() public {
         // Create a test contract that uses onlyAdminOrClient modifier
         TestContractWithModifier testContract = new TestContractWithModifier(admin, client);
-        
+
         vm.prank(admin);
         testContract.testOnlyAdminOrClient();
-        
+
         assertTrue(testContract.called());
     }
 
     function test_OnlyAdminOrClient_SuccessAsClient() public {
         TestContractWithModifier testContract = new TestContractWithModifier(admin, client);
-        
+
         vm.prank(client);
         testContract.testOnlyAdminOrClient();
-        
+
         assertTrue(testContract.called());
     }
 
     function test_OnlyAdminOrClient_RevertsIfNotAdminOrClient() public {
         TestContractWithModifier testContract = new TestContractWithModifier(admin, client);
-        
+
         vm.prank(user1);
         vm.expectRevert(IOTC.OnlyAdminOrClient.selector);
         testContract.testOnlyAdminOrClient();

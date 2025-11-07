@@ -16,33 +16,33 @@ contract OTCScript is Script {
     address constant INPUT_TOKEN = address(0); // address(0) for ETH, or ERC20 token address
     address constant OUTPUT_TOKEN = address(0); // Replace with actual output token address
     address constant CLIENT_ADDRESS = address(0); // Replace with actual client address
-    
+
     uint256 constant BUYBACK_PRICE = 1e18; // 1:1 ratio (adjust as needed)
     uint256 constant MIN_OUTPUT_AMOUNT = 1000 * 1e18; // Minimum 1000 tokens
     uint256 constant MIN_INPUT_AMOUNT = 1 ether; // Minimum 1 ETH or 1 token
-    
+
     bool constant IS_SUPPLY = true; // true for supply-side, false for demand-side
 
     function run() public {
         // Get deployer (admin) address
         address admin = msg.sender;
-        
+
         // Create supply stages array
         IOTC.Supply[] memory supplies = new IOTC.Supply[](3);
-        
+
         // Configure supply stages (modify as needed)
         supplies[0] = IOTC.Supply({
-            input: 0.5 ether,  // 0.5 ETH input
+            input: 0.5 ether, // 0.5 ETH input
             output: 500 * 1e18 // 500 tokens output
         });
-        
+
         supplies[1] = IOTC.Supply({
-            input: 0.3 ether,  // 0.3 ETH input
+            input: 0.3 ether, // 0.3 ETH input
             output: 300 * 1e18 // 300 tokens output
         });
-        
+
         supplies[2] = IOTC.Supply({
-            input: 0.2 ether,  // 0.2 ETH input
+            input: 0.2 ether, // 0.2 ETH input
             output: 200 * 1e18 // 200 tokens output
         });
 
@@ -79,7 +79,7 @@ contract OTCScript is Script {
      */
     function deployDemandSide() public {
         address admin = msg.sender;
-        
+
         // Empty supplies array for demand-side
         IOTC.Supply[] memory supplies = new IOTC.Supply[](0);
 
