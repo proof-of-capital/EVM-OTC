@@ -33,6 +33,8 @@ contract OTC is IOTC, ReentrancyGuard {
     uint256 public immutable override MIN_INPUT_AMOUNT;
     uint256 public immutable override MIN_OUTPUT_AMOUNT;
 
+    bool public immutable override IS_SUPPLY;
+
     uint64 public override supplyLockEndTime;
     uint64 public override totalLockEndTime;
     uint64 public override proposedTime;
@@ -40,10 +42,8 @@ contract OTC is IOTC, ReentrancyGuard {
     uint8 public override currentSupplyIndex;
     uint8 public override currentState;
 
-    bool public immutable IS_SUPPLY;
-
-    mapping(uint8 => Supply) public supplies;
-    FarmWithdrawData public withdrawData;
+    mapping(uint8 => Supply) public override supplies;
+    FarmWithdrawData public override withdrawData;
 
     /**
      * @notice Constructor to initialize the OTC contract

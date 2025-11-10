@@ -70,6 +70,9 @@ interface IOTC {
     function totalLockEndTime() external view returns (uint64);
     function proposedTime() external view returns (uint64);
     function currentState() external view returns (uint8);
+    function IS_SUPPLY() external view returns (bool);
+    function supplies(uint8) external view returns (uint256 input, uint256 output);
+    function withdrawData() external view returns (address farmAccount, bytes memory sendData);
 
     // External functions
     function depositEth() external payable;
