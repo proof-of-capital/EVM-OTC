@@ -29,6 +29,11 @@ interface IOTC {
     error EthTransferFailed();
     error FarmCallFailed();
     error NoFarmData();
+    error ZeroAddress();
+    error InvalidBuybackPrice();
+    error InvalidSupplyData();
+    error SameAddress();
+    error SameTokens();
 
     // Structs
     struct Supply {

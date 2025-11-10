@@ -119,20 +119,6 @@ contract OTCTest is Test {
         assertEq(otc.supplyLockEndTime(), expectedTime);
     }
 
-    function test_Constructor_RevertsIfNotCalledByAdmin() public {
-        vm.expectRevert(IOTC.OnlyAdmin.selector);
-        new OTC(
-            address(inputToken),
-            address(outputToken),
-            admin,
-            client,
-            supplies,
-            BUYBACK_PRICE,
-            MIN_OUTPUT_AMOUNT,
-            MIN_INPUT_AMOUNT,
-            true
-        );
-    }
 
     function test_Constructor_RevertsIfOutputSumTooLow() public {
         IOTC.Supply[] memory lowSupplies = new IOTC.Supply[](1);
@@ -175,10 +161,10 @@ contract OTCTest is Test {
     }
 
     function test_Constructor_RevertsIfInvalidSupplyCount() public {
-        // IS_SUPPLY = true but supplyCount = 0 -> first failing require is OutputSumTooLow
+        // IS_SUPPLY = true but supplyCount = 0 -> InvalidSupplyCount (now checked earlier)
         IOTC.Supply[] memory emptySupplies;
         vm.prank(admin);
-        vm.expectRevert(IOTC.OutputSumTooLow.selector);
+        vm.expectRevert(IOTC.InvalidSupplyCount.selector);
         new OTC(
             address(inputToken),
             address(outputToken),
@@ -204,6 +190,142 @@ contract OTCTest is Test {
             MIN_OUTPUT_AMOUNT,
             MIN_INPUT_AMOUNT,
             false
+        );
+    }
+
+    function test_Constructor_RevertsIfOutputTokenIsZero() public {
+        vm.prank(admin);
+        vm.expectRevert(IOTC.ZeroAddress.selector);
+        new OTC(
+            address(inputToken),
+            address(0), // Zero output token
+            admin,
+            client,
+            supplies,
+            BUYBACK_PRICE,
+            MIN_OUTPUT_AMOUNT,
+            MIN_INPUT_AMOUNT,
+            true
+        );
+    }
+
+    function test_Constructor_RevertsIfAdminIsZero() public {
+        vm.prank(admin);
+        vm.expectRevert(IOTC.ZeroAddress.selector);
+        new OTC(
+            address(inputToken),
+            address(outputToken),
+            address(0), // Zero admin
+            client,
+            supplies,
+            BUYBACK_PRICE,
+            MIN_OUTPUT_AMOUNT,
+            MIN_INPUT_AMOUNT,
+            true
+        );
+    }
+
+    function test_Constructor_RevertsIfClientIsZero() public {
+        vm.prank(admin);
+        vm.expectRevert(IOTC.ZeroAddress.selector);
+        new OTC(
+            address(inputToken),
+            address(outputToken),
+            admin,
+            address(0), // Zero client
+            supplies,
+            BUYBACK_PRICE,
+            MIN_OUTPUT_AMOUNT,
+            MIN_INPUT_AMOUNT,
+            true
+        );
+    }
+
+    function test_Constructor_RevertsIfAdminEqualsClient() public {
+        vm.prank(admin);
+        vm.expectRevert(IOTC.SameAddress.selector);
+        new OTC(
+            address(inputToken),
+            address(outputToken),
+            admin,
+            admin, // Same as admin
+            supplies,
+            BUYBACK_PRICE,
+            MIN_OUTPUT_AMOUNT,
+            MIN_INPUT_AMOUNT,
+            true
+        );
+    }
+
+    function test_Constructor_RevertsIfInputTokenEqualsOutputToken() public {
+        vm.prank(admin);
+        vm.expectRevert(IOTC.SameTokens.selector);
+        new OTC(
+            address(outputToken), // Same as output token
+            address(outputToken),
+            admin,
+            client,
+            supplies,
+            BUYBACK_PRICE,
+            MIN_OUTPUT_AMOUNT,
+            MIN_INPUT_AMOUNT,
+            true
+        );
+    }
+
+    function test_Constructor_RevertsIfBuybackPriceIsZero() public {
+        vm.prank(admin);
+        vm.expectRevert(IOTC.InvalidBuybackPrice.selector);
+        new OTC(
+            address(inputToken),
+            address(outputToken),
+            admin,
+            client,
+            supplies,
+            0, // Zero buyback price
+            MIN_OUTPUT_AMOUNT,
+            MIN_INPUT_AMOUNT,
+            true
+        );
+    }
+
+    function test_Constructor_RevertsIfSupplyInputIsZero() public {
+        IOTC.Supply[] memory invalidSupplies = new IOTC.Supply[](2);
+        invalidSupplies[0] = IOTC.Supply({input: 50 ether, output: 500 ether});
+        invalidSupplies[1] = IOTC.Supply({input: 0, output: 500 ether}); // Zero input
+
+        vm.prank(admin);
+        vm.expectRevert(IOTC.InvalidSupplyData.selector);
+        new OTC(
+            address(inputToken),
+            address(outputToken),
+            admin,
+            client,
+            invalidSupplies,
+            BUYBACK_PRICE,
+            MIN_OUTPUT_AMOUNT,
+            MIN_INPUT_AMOUNT,
+            true
+        );
+    }
+
+    function test_Constructor_RevertsIfSupplyOutputIsZero() public {
+        IOTC.Supply[] memory invalidSupplies = new IOTC.Supply[](2);
+        invalidSupplies[0] = IOTC.Supply({input: 50 ether, output: 500 ether});
+        invalidSupplies[1] = IOTC.Supply({input: 50 ether, output: 0}); // Zero output
+
+        vm.prank(admin);
+        vm.expectRevert(IOTC.InvalidSupplyData.selector);
+        new OTC(
+            address(inputToken),
+            address(outputToken),
+            admin,
+            client,
+            invalidSupplies,
+            BUYBACK_PRICE,
+            MIN_OUTPUT_AMOUNT,
+            MIN_INPUT_AMOUNT,
+            true
         );
     }
 

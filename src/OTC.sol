@@ -68,7 +68,14 @@ contract OTC is IOTC, ReentrancyGuard {
         uint256 _minInputAmount,
         bool _isSupply
     ) {
-        require(msg.sender == _admin, IOTC.OnlyAdmin());
+        require(_outputToken != address(0), IOTC.ZeroAddress());
+        require(_admin != address(0), IOTC.ZeroAddress());
+        require(_client != address(0), IOTC.ZeroAddress());
+        require(_admin != _client, IOTC.SameAddress());
+        require(_inputToken == address(0) || _inputToken != _outputToken, IOTC.SameTokens());
+        require(_buybackPrice > 0, IOTC.InvalidBuybackPrice());
+        require((!_isSupply || _supplies.length != 0) && (_isSupply || _supplies.length == 0), IOTC.InvalidSupplyCount());
+
 
         INPUT_TOKEN = _inputToken;
         OUTPUT_TOKEN = _outputToken;
@@ -80,10 +87,14 @@ contract OTC is IOTC, ReentrancyGuard {
         IS_SUPPLY = _isSupply;
         currentState = OTCConstants.STATE_FUNDING;
 
+
+
         uint256 outputSum = 0;
         uint256 inputSum = 0;
 
         for (uint8 i = 0; i < _supplies.length; i++) {
+            require(_supplies[i].input > 0, IOTC.InvalidSupplyData());
+            require(_supplies[i].output > 0, IOTC.InvalidSupplyData());
             supplies[i] = _supplies[i];
             supplyCount++;
             outputSum += _supplies[i].output;
@@ -92,11 +103,8 @@ contract OTC is IOTC, ReentrancyGuard {
 
         supplyLockEndTime = uint64(block.timestamp) + OTCConstants.INITIAL_LOCK_PERIOD;
 
-        // Validation
         require(!IS_SUPPLY || outputSum >= _minOutputAmount, IOTC.OutputSumTooLow());
-        // For supply-side contracts we validate planned inputSum; demand-side has no supplies
         require(!IS_SUPPLY || inputSum >= _minInputAmount, IOTC.InputSumTooLow());
-        require((!IS_SUPPLY || supplyCount != 0) && (IS_SUPPLY || supplyCount == 0), IOTC.InvalidSupplyCount());
     }
 
     // Modifiers
