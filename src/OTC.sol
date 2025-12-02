@@ -249,6 +249,8 @@ contract OTC is IOTC, ReentrancyGuard {
         // Transfer output tokens from admin
         IERC20(OUTPUT_TOKEN).safeTransferFrom(msg.sender, address(this), currentSupply.output);
 
+        emit SupplyProcessed(currentSupplyIndex, currentSupply.input, currentSupply.output);
+
         currentSupplyIndex++;
 
         // Transfer input tokens/ETH to admin
@@ -258,8 +260,6 @@ contract OTC is IOTC, ReentrancyGuard {
         } else {
             IERC20(INPUT_TOKEN).safeTransfer(ADMIN_ADDRESS, currentSupply.input);
         }
-
-        emit SupplyProcessed(currentSupplyIndex - 1, currentSupply.input, currentSupply.output);
 
         if (currentSupplyIndex == supplyCount) {
             _changeState(OTCConstants.STATE_SUPPLY_PROVIDED);
