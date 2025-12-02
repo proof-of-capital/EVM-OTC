@@ -180,14 +180,14 @@ contract OTC is IOTC, ReentrancyGuard {
 
         IERC20(OUTPUT_TOKEN).safeTransferFrom(msg.sender, address(this), amount);
 
-        uint256 balanceAfter = IERC20(OUTPUT_TOKEN).balanceOf(address(this));
+        uint256 currentBalance = IERC20(OUTPUT_TOKEN).balanceOf(address(this));
 
         emit DepositedOutput(msg.sender, amount);
 
-        if (balanceAfter >= MIN_OUTPUT_AMOUNT) {
+        if (currentBalance >= MIN_OUTPUT_AMOUNT) {
             _changeState(OTCConstants.STATE_SUPPLY_PROVIDED);
             totalLockEndTime = uint64(block.timestamp) + OTCConstants.TOTAL_LOCK_PERIOD;
-            emit OutputChecked(balanceAfter);
+            emit OutputChecked(currentBalance);
         }
     }
 
@@ -304,10 +304,7 @@ contract OTC is IOTC, ReentrancyGuard {
      * @notice Client votes NO on the farm account proposal
      */
     function voteNo() external override onlyClient nonReentrant {
-        require(
-            currentState == OTCConstants.STATE_WAITING_FOR_CLIENT_ANSWER,
-            IOTC.InvalidStateForVote(currentState)
-        );
+        require(currentState == OTCConstants.STATE_WAITING_FOR_CLIENT_ANSWER, IOTC.InvalidStateForVote(currentState));
 
         _changeState(OTCConstants.STATE_CLIENT_REJECTED);
         emit ClientVoted(false);
