@@ -91,7 +91,7 @@ interface IOTC {
     function withdrawInput(uint256 amount) external;
     function withdrawOutput(uint256 amount) external;
     function supplyOutput() external;
-    function proposeFarmAccount(FarmWithdrawData calldata _withdrawData) external;
+    function proposeDaoAccount(FarmWithdrawData calldata _withdrawData) external;
     function voteYes() external;
     function voteNo() external;
     function sendToFarm() external;

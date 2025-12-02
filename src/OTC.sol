@@ -271,7 +271,7 @@ contract OTC is IOTC, ReentrancyGuard {
      * @notice Admin proposes a farm account for token deployment
      * @param _withdrawData Farm account data including address and call data
      */
-    function proposeFarmAccount(FarmWithdrawData calldata _withdrawData)
+    function proposeDaoAccount(FarmWithdrawData calldata _withdrawData)
         external
         override
         onlyAdmin

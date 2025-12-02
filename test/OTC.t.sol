@@ -915,19 +915,19 @@ contract OTCTest is Test {
 
     // ==================== PROPOSE FARM ACCOUNT TESTS ====================
 
-    function test_ProposeFarmAccount_Success() public {
+    function test_ProposeDaoAccount_Success() public {
         _setupToSupplyProvided(otc);
 
         IOTC.FarmWithdrawData memory farmData = IOTC.FarmWithdrawData({farmAccount: farmAccount, sendData: ""});
 
         vm.prank(admin);
-        otc.proposeFarmAccount(farmData);
+        otc.proposeDaoAccount(farmData);
 
         assertEq(otc.currentState(), OTCConstants.STATE_WAITING_FOR_CLIENT_ANSWER);
         assertEq(otc.proposedTime(), block.timestamp);
     }
 
-    function test_ProposeFarmAccount_EmitsEvents() public {
+    function test_ProposeDaoAccount_EmitsEvents() public {
         _setupToSupplyProvided(otc);
 
         IOTC.FarmWithdrawData memory farmData = IOTC.FarmWithdrawData({farmAccount: farmAccount, sendData: ""});
@@ -935,20 +935,20 @@ contract OTCTest is Test {
         vm.prank(admin);
         vm.expectEmit(true, false, false, true);
         emit IOTC.FarmAccountProposed(farmAccount, uint64(block.timestamp));
-        otc.proposeFarmAccount(farmData);
+        otc.proposeDaoAccount(farmData);
     }
 
-    function test_ProposeFarmAccount_RevertsIfNotAdmin() public {
+    function test_ProposeDaoAccount_RevertsIfNotAdmin() public {
         _setupToSupplyProvided(otc);
 
         IOTC.FarmWithdrawData memory farmData = IOTC.FarmWithdrawData({farmAccount: farmAccount, sendData: ""});
 
         vm.prank(user1);
         vm.expectRevert(IOTC.OnlyAdmin.selector);
-        otc.proposeFarmAccount(farmData);
+        otc.proposeDaoAccount(farmData);
     }
 
-    function test_ProposeFarmAccount_RevertsIfWrongState() public {
+    function test_ProposeDaoAccount_RevertsIfWrongState() public {
         IOTC.FarmWithdrawData memory farmData = IOTC.FarmWithdrawData({farmAccount: farmAccount, sendData: ""});
 
         vm.prank(admin);
@@ -957,7 +957,7 @@ contract OTCTest is Test {
                 IOTC.InvalidState.selector, OTCConstants.STATE_FUNDING, OTCConstants.STATE_SUPPLY_PROVIDED
             )
         );
-        otc.proposeFarmAccount(farmData);
+        otc.proposeDaoAccount(farmData);
     }
 
     // ==================== VOTE YES TESTS ====================
@@ -1089,7 +1089,7 @@ contract OTCTest is Test {
         _setupToSupplyProvided(otc2);
 
         vm.prank(admin);
-        otc2.proposeFarmAccount(farmData);
+        otc2.proposeDaoAccount(farmData);
 
         vm.prank(client);
         otc2.voteYes();
@@ -1173,7 +1173,7 @@ contract OTCTest is Test {
         );
         _setupToSupplyProvided(otc2);
         vm.prank(admin);
-        otc2.proposeFarmAccount(farmData);
+        otc2.proposeDaoAccount(farmData);
 
         vm.prank(client);
         otc2.voteYes();
@@ -1480,7 +1480,7 @@ contract OTCTest is Test {
         // 3. Propose farm account
         IOTC.FarmWithdrawData memory farmData = IOTC.FarmWithdrawData({farmAccount: farmAccount, sendData: ""});
         vm.prank(admin);
-        otcEth.proposeFarmAccount(farmData);
+        otcEth.proposeDaoAccount(farmData);
 
         assertEq(otcEth.currentState(), OTCConstants.STATE_WAITING_FOR_CLIENT_ANSWER);
 
@@ -1511,7 +1511,7 @@ contract OTCTest is Test {
         // 3. Propose farm account
         IOTC.FarmWithdrawData memory farmData = IOTC.FarmWithdrawData({farmAccount: farmAccount, sendData: ""});
         vm.prank(admin);
-        otc.proposeFarmAccount(farmData);
+        otc.proposeDaoAccount(farmData);
 
         // 4. Client votes NO
         vm.prank(client);
@@ -1584,7 +1584,7 @@ contract OTCTest is Test {
         IOTC.FarmWithdrawData memory farmData = IOTC.FarmWithdrawData({farmAccount: farmAccount, sendData: ""});
 
         vm.prank(contractInstance.ADMIN_ADDRESS());
-        contractInstance.proposeFarmAccount(farmData);
+        contractInstance.proposeDaoAccount(farmData);
     }
 
     function _setupToClientAccepted(OTC contractInstance) internal {
