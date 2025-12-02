@@ -1318,32 +1318,6 @@ contract OTCTest is Test {
         vm.stopPrank();
     }
 
-    function test_BuybackWithToken_RevertsIfNotEnoughOutputToken() public {
-        _setupToWaitingForClientAnswer(otc);
-
-        vm.warp(block.timestamp + OTCConstants.PROPOSE_FARM_ACCOUNT_LOCK_PERIOD + 1);
-
-        uint256 inputAmount = 100 ether;
-        uint256 outputAmount = (inputAmount * OTCConstants.NOMINATOR) / BUYBACK_PRICE;
-
-        // Get current balance in contract
-        uint256 contractBalance = outputToken.balanceOf(address(otc));
-
-        // Calculate amount to burn/transfer to make balance insufficient
-        uint256 amountToRemove = contractBalance - outputAmount + 1 ether;
-
-        // Use burn to reduce contract balance
-        // MockERC20 has burn function that can be called on any address
-        outputToken.burn(address(otc), amountToRemove);
-
-        // Now contract has insufficient balance
-        vm.startPrank(admin);
-        inputToken.approve(address(otc), inputAmount);
-        vm.expectRevert(IOTC.NotEnoughOutputToken.selector);
-        otc.buybackWithToken(inputAmount);
-        vm.stopPrank();
-    }
-
     // ==================== BUYBACK WITH ETH TESTS ====================
 
     function test_BuybackWithEth_Success() public {
@@ -1436,30 +1410,6 @@ contract OTCTest is Test {
         vm.prank(admin);
         vm.expectRevert(IOTC.ProposeLockActive.selector);
         otcEth.buybackWithEth{value: 1 ether}();
-    }
-
-    function test_BuybackWithEth_RevertsIfNotEnoughOutputToken() public {
-        _setupToWaitingForClientAnswer(otcEth);
-
-        vm.warp(block.timestamp + OTCConstants.PROPOSE_FARM_ACCOUNT_LOCK_PERIOD + 1);
-
-        uint256 inputAmount = 1 ether;
-        uint256 outputAmount = (inputAmount * OTCConstants.NOMINATOR) / BUYBACK_PRICE;
-
-        // Get current balance in contract
-        uint256 contractBalance = outputToken.balanceOf(address(otcEth));
-
-        // Calculate amount to burn to make balance insufficient
-        uint256 amountToRemove = contractBalance - outputAmount + 1 ether;
-
-        // Use burn to reduce contract balance
-        outputToken.burn(address(otcEth), amountToRemove);
-
-        // Now contract has insufficient balance
-        vm.deal(admin, 10 ether);
-        vm.prank(admin);
-        vm.expectRevert(IOTC.NotEnoughOutputToken.selector);
-        otcEth.buybackWithEth{value: inputAmount}();
     }
 
     // ==================== FULL FLOW TESTS ====================

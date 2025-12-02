@@ -341,8 +341,6 @@ contract OTC is IOTC, ReentrancyGuard {
 
         uint256 outputAmount = (amount * OTCConstants.NOMINATOR) / BUYBACK_PRICE;
 
-        require(outputAmount <= IERC20(OUTPUT_TOKEN).balanceOf(address(this)), IOTC.NotEnoughOutputToken());
-
         _changeState(OTCConstants.STATE_FINAL);
 
         IERC20(INPUT_TOKEN).safeTransferFrom(msg.sender, address(this), amount);
@@ -368,8 +366,6 @@ contract OTC is IOTC, ReentrancyGuard {
 
         uint256 amount = msg.value;
         uint256 outputAmount = (amount * OTCConstants.NOMINATOR) / BUYBACK_PRICE;
-
-        require(outputAmount <= IERC20(OUTPUT_TOKEN).balanceOf(address(this)), IOTC.NotEnoughOutputToken());
 
         _changeState(OTCConstants.STATE_FINAL);
 
