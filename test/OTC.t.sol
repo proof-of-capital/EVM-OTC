@@ -359,9 +359,7 @@ contract OTCTest is Test {
     function test_DepositEth_RevertsIfNotSupplySide() public {
         vm.deal(user1, 100 ether);
         vm.prank(user1);
-        vm.expectRevert(
-            abi.encodeWithSelector(IOTC.InvalidState.selector, OTCConstants.STATE_FUNDING, OTCConstants.STATE_FUNDING)
-        );
+        vm.expectRevert(IOTC.NotSupplyContract.selector);
         otcDemand.depositEth{value: 50 ether}();
     }
 
@@ -406,9 +404,7 @@ contract OTCTest is Test {
     function test_DepositToken_RevertsIfNotSupplySide() public {
         vm.startPrank(user1);
         inputToken.approve(address(otcDemand), 50 ether);
-        vm.expectRevert(
-            abi.encodeWithSelector(IOTC.InvalidState.selector, OTCConstants.STATE_FUNDING, OTCConstants.STATE_FUNDING)
-        );
+        vm.expectRevert(IOTC.NotSupplyContract.selector);
         otcDemand.depositToken(50 ether);
         vm.stopPrank();
     }
@@ -473,9 +469,7 @@ contract OTCTest is Test {
     function test_DepositOutput_RevertsIfSupplySide() public {
         vm.startPrank(user1);
         outputToken.approve(address(otc), 50 ether);
-        vm.expectRevert(
-            abi.encodeWithSelector(IOTC.InvalidState.selector, OTCConstants.STATE_FUNDING, OTCConstants.STATE_FUNDING)
-        );
+        vm.expectRevert(IOTC.NotDemandContract.selector);
         otc.depositOutput(50 ether);
         vm.stopPrank();
     }
@@ -1009,9 +1003,7 @@ contract OTCTest is Test {
     function test_VoteYes_RevertsIfWrongState() public {
         vm.prank(client);
         vm.expectRevert(
-            abi.encodeWithSelector(
-                IOTC.InvalidState.selector, OTCConstants.STATE_FUNDING, OTCConstants.STATE_WAITING_FOR_CLIENT_ANSWER
-            )
+            abi.encodeWithSelector(IOTC.InvalidStateForVote.selector, OTCConstants.STATE_FUNDING)
         );
         otc.voteYes();
     }
@@ -1047,9 +1039,7 @@ contract OTCTest is Test {
     function test_VoteNo_RevertsIfWrongState() public {
         vm.prank(client);
         vm.expectRevert(
-            abi.encodeWithSelector(
-                IOTC.InvalidState.selector, OTCConstants.STATE_FUNDING, OTCConstants.STATE_WAITING_FOR_CLIENT_ANSWER
-            )
+            abi.encodeWithSelector(IOTC.InvalidStateForVote.selector, OTCConstants.STATE_FUNDING)
         );
         otc.voteNo();
     }
@@ -1062,11 +1052,7 @@ contract OTCTest is Test {
 
         vm.prank(client);
         vm.expectRevert(
-            abi.encodeWithSelector(
-                IOTC.InvalidState.selector,
-                OTCConstants.STATE_CLIENT_REJECTED,
-                OTCConstants.STATE_WAITING_FOR_CLIENT_ANSWER
-            )
+            abi.encodeWithSelector(IOTC.InvalidStateForVote.selector, OTCConstants.STATE_CLIENT_REJECTED)
         );
         otc.voteNo();
     }
@@ -1306,9 +1292,7 @@ contract OTCTest is Test {
         vm.startPrank(admin);
         inputToken.approve(address(otc), 100 ether);
         vm.expectRevert(
-            abi.encodeWithSelector(
-                IOTC.InvalidState.selector, OTCConstants.STATE_FUNDING, OTCConstants.STATE_WAITING_FOR_CLIENT_ANSWER
-            )
+            abi.encodeWithSelector(IOTC.InvalidStateForBuyback.selector, OTCConstants.STATE_FUNDING)
         );
         otc.buybackWithToken(100 ether);
         vm.stopPrank();
@@ -1325,11 +1309,7 @@ contract OTCTest is Test {
         vm.startPrank(admin);
         inputToken.approve(address(otc), 100 ether);
         vm.expectRevert(
-            abi.encodeWithSelector(
-                IOTC.InvalidState.selector,
-                OTCConstants.STATE_SUPPLY_PROVIDED,
-                OTCConstants.STATE_WAITING_FOR_CLIENT_ANSWER
-            )
+            abi.encodeWithSelector(IOTC.InvalidStateForBuyback.selector, OTCConstants.STATE_SUPPLY_PROVIDED)
         );
         otc.buybackWithToken(100 ether);
         vm.stopPrank();
@@ -1437,9 +1417,7 @@ contract OTCTest is Test {
 
         vm.prank(admin);
         vm.expectRevert(
-            abi.encodeWithSelector(
-                IOTC.InvalidState.selector, OTCConstants.STATE_FUNDING, OTCConstants.STATE_WAITING_FOR_CLIENT_ANSWER
-            )
+            abi.encodeWithSelector(IOTC.InvalidStateForBuyback.selector, OTCConstants.STATE_FUNDING)
         );
         otcEth.buybackWithEth{value: 1 ether}();
     }
@@ -1454,11 +1432,7 @@ contract OTCTest is Test {
         vm.deal(admin, 10 ether);
         vm.prank(admin);
         vm.expectRevert(
-            abi.encodeWithSelector(
-                IOTC.InvalidState.selector,
-                OTCConstants.STATE_SUPPLY_PROVIDED,
-                OTCConstants.STATE_WAITING_FOR_CLIENT_ANSWER
-            )
+            abi.encodeWithSelector(IOTC.InvalidStateForBuyback.selector, OTCConstants.STATE_SUPPLY_PROVIDED)
         );
         otcEth.buybackWithEth{value: 1 ether}();
     }

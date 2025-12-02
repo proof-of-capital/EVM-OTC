@@ -140,7 +140,7 @@ contract OTC is IOTC, ReentrancyGuard {
      * @dev Automatically checks if minimum amount is reached and transitions state
      */
     function depositEth() external payable override nonReentrant inState(OTCConstants.STATE_FUNDING) {
-        require(IS_SUPPLY, IOTC.InvalidState(currentState, OTCConstants.STATE_FUNDING));
+        require(IS_SUPPLY, IOTC.NotSupplyContract());
         require(INPUT_TOKEN == address(0), IOTC.InputTokenIsToken());
 
         emit DepositedInput(msg.sender, msg.value);
@@ -155,7 +155,7 @@ contract OTC is IOTC, ReentrancyGuard {
      * @dev Automatically checks if minimum amount is reached and transitions state
      */
     function depositToken(uint256 amount) external override nonReentrant inState(OTCConstants.STATE_FUNDING) {
-        require(IS_SUPPLY, IOTC.InvalidState(currentState, OTCConstants.STATE_FUNDING));
+        require(IS_SUPPLY, IOTC.NotSupplyContract());
         require(INPUT_TOKEN != address(0), IOTC.InputTokenIsEth());
 
         // Transfer tokens from sender
@@ -176,7 +176,7 @@ contract OTC is IOTC, ReentrancyGuard {
      * @dev Automatically checks if minimum amount is reached and transitions state
      */
     function depositOutput(uint256 amount) external override nonReentrant inState(OTCConstants.STATE_FUNDING) {
-        require(!IS_SUPPLY, IOTC.InvalidState(currentState, OTCConstants.STATE_FUNDING));
+        require(!IS_SUPPLY, IOTC.NotDemandContract());
 
         IERC20(OUTPUT_TOKEN).safeTransferFrom(msg.sender, address(this), amount);
 
@@ -293,7 +293,7 @@ contract OTC is IOTC, ReentrancyGuard {
         require(
             currentState == OTCConstants.STATE_WAITING_FOR_CLIENT_ANSWER
                 || currentState == OTCConstants.STATE_CLIENT_REJECTED,
-            IOTC.InvalidState(currentState, OTCConstants.STATE_WAITING_FOR_CLIENT_ANSWER)
+            IOTC.InvalidStateForVote(currentState)
         );
 
         _changeState(OTCConstants.STATE_CLIENT_ACCEPTED);
@@ -306,7 +306,7 @@ contract OTC is IOTC, ReentrancyGuard {
     function voteNo() external override onlyClient nonReentrant {
         require(
             currentState == OTCConstants.STATE_WAITING_FOR_CLIENT_ANSWER,
-            IOTC.InvalidState(currentState, OTCConstants.STATE_WAITING_FOR_CLIENT_ANSWER)
+            IOTC.InvalidStateForVote(currentState)
         );
 
         _changeState(OTCConstants.STATE_CLIENT_REJECTED);
@@ -336,7 +336,7 @@ contract OTC is IOTC, ReentrancyGuard {
         require(
             currentState == OTCConstants.STATE_WAITING_FOR_CLIENT_ANSWER
                 || currentState == OTCConstants.STATE_CLIENT_REJECTED || currentState == OTCConstants.STATE_CANCELED,
-            IOTC.InvalidState(currentState, OTCConstants.STATE_WAITING_FOR_CLIENT_ANSWER)
+            IOTC.InvalidStateForBuyback(currentState)
         );
         require(
             block.timestamp > proposedTime + OTCConstants.PROPOSE_FARM_ACCOUNT_LOCK_PERIOD, IOTC.ProposeLockActive()
@@ -363,7 +363,7 @@ contract OTC is IOTC, ReentrancyGuard {
         require(
             currentState == OTCConstants.STATE_WAITING_FOR_CLIENT_ANSWER
                 || currentState == OTCConstants.STATE_CLIENT_REJECTED || currentState == OTCConstants.STATE_CANCELED,
-            IOTC.InvalidState(currentState, OTCConstants.STATE_WAITING_FOR_CLIENT_ANSWER)
+            IOTC.InvalidStateForBuyback(currentState)
         );
         require(
             block.timestamp > proposedTime + OTCConstants.PROPOSE_FARM_ACCOUNT_LOCK_PERIOD, IOTC.ProposeLockActive()

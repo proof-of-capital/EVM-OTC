@@ -34,6 +34,10 @@ interface IOTC {
     error InvalidSupplyData();
     error SameAddress();
     error SameTokens();
+    error NotSupplyContract();
+    error NotDemandContract();
+    error InvalidStateForBuyback(uint8 current);
+    error InvalidStateForVote(uint8 current);
 
     // Structs
     struct Supply {
