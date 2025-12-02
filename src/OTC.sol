@@ -255,10 +255,10 @@ contract OTC is IOTC, ReentrancyGuard {
 
         // Transfer input tokens/ETH to admin
         if (INPUT_TOKEN == address(0)) {
-            (bool success,) = ADMIN_ADDRESS.call{value: currentSupply.input}("");
+            (bool success,) = payable(msg.sender).call{value: currentSupply.input}("");
             require(success, IOTC.EthTransferFailed());
         } else {
-            IERC20(INPUT_TOKEN).safeTransfer(ADMIN_ADDRESS, currentSupply.input);
+            IERC20(INPUT_TOKEN).safeTransfer(msg.sender, currentSupply.input);
         }
 
         if (currentSupplyIndex == supplyCount) {
@@ -345,7 +345,7 @@ contract OTC is IOTC, ReentrancyGuard {
 
         IERC20(INPUT_TOKEN).safeTransferFrom(msg.sender, address(this), amount);
 
-        IERC20(OUTPUT_TOKEN).safeTransfer(ADMIN_ADDRESS, outputAmount);
+        IERC20(OUTPUT_TOKEN).safeTransfer(msg.sender, outputAmount);
 
         emit BuybackExecuted(amount, outputAmount);
     }
@@ -369,7 +369,7 @@ contract OTC is IOTC, ReentrancyGuard {
 
         _changeState(OTCConstants.STATE_FINAL);
 
-        IERC20(OUTPUT_TOKEN).safeTransfer(ADMIN_ADDRESS, outputAmount);
+        IERC20(OUTPUT_TOKEN).safeTransfer(msg.sender, outputAmount);
 
         emit BuybackExecuted(amount, outputAmount);
     }
