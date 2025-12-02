@@ -53,8 +53,8 @@ contract OTC is IOTC, ReentrancyGuard {
      * @param _client Client address
      * @param _supplies Array of supply structs
      * @param _buybackPrice Price for buyback (in NOMINATOR units)
-     * @param _minOutputAmount Minimum output token amount
-     * @param _minInputAmount Minimum input token amount
+     * @param _outputAmount Output token amount
+     * @param _inputAmount Input token amount
      * @param _isSupply True if this is a supply-side contract
      */
     constructor(
@@ -64,8 +64,8 @@ contract OTC is IOTC, ReentrancyGuard {
         address _client,
         Supply[] memory _supplies,
         uint256 _buybackPrice,
-        uint256 _minOutputAmount,
-        uint256 _minInputAmount,
+        uint256 _outputAmount,
+        uint256 _inputAmount,
         bool _isSupply
     ) {
         require(_outputToken != address(0), IOTC.ZeroAddress());
@@ -74,20 +74,19 @@ contract OTC is IOTC, ReentrancyGuard {
         require(_admin != _client, IOTC.SameAddress());
         require(_inputToken == address(0) || _inputToken != _outputToken, IOTC.SameTokens());
         require(_buybackPrice > 0, IOTC.InvalidBuybackPrice());
-        require((!_isSupply || _supplies.length != 0) && (_isSupply || _supplies.length == 0), IOTC.InvalidSupplyCount());
-
+        require(
+            (!_isSupply || _supplies.length != 0) && (_isSupply || _supplies.length == 0), IOTC.InvalidSupplyCount()
+        );
 
         INPUT_TOKEN = _inputToken;
         OUTPUT_TOKEN = _outputToken;
         ADMIN_ADDRESS = _admin;
         CLIENT_ADDRESS = _client;
         BUYBACK_PRICE = _buybackPrice;
-        MIN_OUTPUT_AMOUNT = _minOutputAmount;
-        MIN_INPUT_AMOUNT = _minInputAmount;
+        MIN_OUTPUT_AMOUNT = _outputAmount;
+        MIN_INPUT_AMOUNT = _inputAmount;
         IS_SUPPLY = _isSupply;
         currentState = OTCConstants.STATE_FUNDING;
-
-
 
         uint256 outputSum = 0;
         uint256 inputSum = 0;
@@ -103,8 +102,8 @@ contract OTC is IOTC, ReentrancyGuard {
 
         supplyLockEndTime = uint64(block.timestamp) + OTCConstants.INITIAL_LOCK_PERIOD;
 
-        require(!IS_SUPPLY || outputSum >= _minOutputAmount, IOTC.OutputSumTooLow());
-        require(!IS_SUPPLY || inputSum >= _minInputAmount, IOTC.InputSumTooLow());
+        require(!IS_SUPPLY || outputSum == _outputAmount, IOTC.OutputSumTooLow());
+        require(!IS_SUPPLY || inputSum == _inputAmount, IOTC.InputSumTooLow());
     }
 
     // Modifiers

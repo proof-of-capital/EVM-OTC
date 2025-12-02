@@ -119,7 +119,6 @@ contract OTCTest is Test {
         assertEq(otc.supplyLockEndTime(), expectedTime);
     }
 
-
     function test_Constructor_RevertsIfOutputSumTooLow() public {
         IOTC.Supply[] memory lowSupplies = new IOTC.Supply[](1);
         lowSupplies[0] = IOTC.Supply({input: 50 ether, output: 50 ether}); // Below MIN_OUTPUT_AMOUNT
@@ -140,10 +139,10 @@ contract OTCTest is Test {
     }
 
     function test_Constructor_RevertsIfInputSumTooLow() public {
-        // IS_SUPPLY = true, outputSum >= MIN_OUTPUT_AMOUNT, but inputSum < MIN_INPUT_AMOUNT
+        // IS_SUPPLY = true, outputSum == MIN_OUTPUT_AMOUNT, but inputSum != MIN_INPUT_AMOUNT
         IOTC.Supply[] memory lowInputSupplies = new IOTC.Supply[](2);
-        lowInputSupplies[0] = IOTC.Supply({input: 30 ether, output: 600 ether}); // input below threshold
-        lowInputSupplies[1] = IOTC.Supply({input: 30 ether, output: 600 ether}); // total input = 60 ether < MIN_INPUT_AMOUNT (100 ether)
+        lowInputSupplies[0] = IOTC.Supply({input: 30 ether, output: 500 ether}); // input below threshold
+        lowInputSupplies[1] = IOTC.Supply({input: 30 ether, output: 500 ether}); // total input = 60 ether != MIN_INPUT_AMOUNT (100 ether), total output = 1000 ether == MIN_OUTPUT_AMOUNT
 
         vm.prank(admin);
         vm.expectRevert(IOTC.InputSumTooLow.selector);
