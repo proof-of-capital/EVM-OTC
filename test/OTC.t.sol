@@ -690,7 +690,7 @@ contract OTCTest is Test {
         otcDemand.withdrawOutput(50 ether);
 
         assertEq(outputToken.balanceOf(client), balanceBefore + 50 ether);
-        assertEq(otcDemand.currentState(), OTCConstants.STATE_CANCELED);
+        assertEq(otcDemand.currentState(), OTCConstants.STATE_FINAL);
     }
 
     function test_WithdrawOutput_EmitsEvents() public {
@@ -1002,9 +1002,7 @@ contract OTCTest is Test {
 
     function test_VoteYes_RevertsIfWrongState() public {
         vm.prank(client);
-        vm.expectRevert(
-            abi.encodeWithSelector(IOTC.InvalidStateForVote.selector, OTCConstants.STATE_FUNDING)
-        );
+        vm.expectRevert(abi.encodeWithSelector(IOTC.InvalidStateForVote.selector, OTCConstants.STATE_FUNDING));
         otc.voteYes();
     }
 
@@ -1038,9 +1036,7 @@ contract OTCTest is Test {
 
     function test_VoteNo_RevertsIfWrongState() public {
         vm.prank(client);
-        vm.expectRevert(
-            abi.encodeWithSelector(IOTC.InvalidStateForVote.selector, OTCConstants.STATE_FUNDING)
-        );
+        vm.expectRevert(abi.encodeWithSelector(IOTC.InvalidStateForVote.selector, OTCConstants.STATE_FUNDING));
         otc.voteNo();
     }
 
@@ -1051,9 +1047,7 @@ contract OTCTest is Test {
         otc.voteNo();
 
         vm.prank(client);
-        vm.expectRevert(
-            abi.encodeWithSelector(IOTC.InvalidStateForVote.selector, OTCConstants.STATE_CLIENT_REJECTED)
-        );
+        vm.expectRevert(abi.encodeWithSelector(IOTC.InvalidStateForVote.selector, OTCConstants.STATE_CLIENT_REJECTED));
         otc.voteNo();
     }
 
@@ -1206,7 +1200,7 @@ contract OTCTest is Test {
         otc.buybackWithToken(inputAmount);
         vm.stopPrank();
 
-        assertEq(otc.currentState(), OTCConstants.STATE_CANCELED);
+        assertEq(otc.currentState(), OTCConstants.STATE_FINAL);
         assertEq(outputToken.balanceOf(admin), adminOutputBefore + expectedOutput);
     }
 
@@ -1224,7 +1218,7 @@ contract OTCTest is Test {
         otc.buybackWithToken(inputAmount);
         vm.stopPrank();
 
-        assertEq(otc.currentState(), OTCConstants.STATE_CANCELED);
+        assertEq(otc.currentState(), OTCConstants.STATE_FINAL);
     }
 
     function test_BuybackWithToken_FromCanceledState() public {
@@ -1245,7 +1239,7 @@ contract OTCTest is Test {
         otc.buybackWithToken(inputAmount);
         vm.stopPrank();
 
-        assertEq(otc.currentState(), OTCConstants.STATE_CANCELED);
+        assertEq(otc.currentState(), OTCConstants.STATE_FINAL);
     }
 
     function test_BuybackWithToken_EmitsEvents() public {
@@ -1291,9 +1285,7 @@ contract OTCTest is Test {
     function test_BuybackWithToken_RevertsIfWrongState() public {
         vm.startPrank(admin);
         inputToken.approve(address(otc), 100 ether);
-        vm.expectRevert(
-            abi.encodeWithSelector(IOTC.InvalidStateForBuyback.selector, OTCConstants.STATE_FUNDING)
-        );
+        vm.expectRevert(abi.encodeWithSelector(IOTC.InvalidStateForBuyback.selector, OTCConstants.STATE_FUNDING));
         otc.buybackWithToken(100 ether);
         vm.stopPrank();
     }
@@ -1368,7 +1360,7 @@ contract OTCTest is Test {
         vm.prank(admin);
         otcEth.buybackWithEth{value: inputAmount}();
 
-        assertEq(otcEth.currentState(), OTCConstants.STATE_CANCELED);
+        assertEq(otcEth.currentState(), OTCConstants.STATE_FINAL);
         assertEq(outputToken.balanceOf(admin), adminOutputBefore + expectedOutput);
     }
 
@@ -1416,9 +1408,7 @@ contract OTCTest is Test {
         vm.deal(admin, 10 ether);
 
         vm.prank(admin);
-        vm.expectRevert(
-            abi.encodeWithSelector(IOTC.InvalidStateForBuyback.selector, OTCConstants.STATE_FUNDING)
-        );
+        vm.expectRevert(abi.encodeWithSelector(IOTC.InvalidStateForBuyback.selector, OTCConstants.STATE_FUNDING));
         otcEth.buybackWithEth{value: 1 ether}();
     }
 
@@ -1540,7 +1530,7 @@ contract OTCTest is Test {
         otc.buybackWithToken(inputAmount);
         vm.stopPrank();
 
-        assertEq(otc.currentState(), OTCConstants.STATE_CANCELED);
+        assertEq(otc.currentState(), OTCConstants.STATE_FINAL);
         assertEq(outputToken.balanceOf(admin), 10000 ether - 1000 ether + expectedOutput);
     }
 
@@ -1562,7 +1552,7 @@ contract OTCTest is Test {
         otcDemand.withdrawOutput(50 ether);
 
         assertEq(outputToken.balanceOf(client), clientBalanceBefore + 50 ether);
-        assertEq(otcDemand.currentState(), OTCConstants.STATE_CANCELED);
+        assertEq(otcDemand.currentState(), OTCConstants.STATE_FINAL);
     }
 
     // ==================== HELPER FUNCTIONS ====================

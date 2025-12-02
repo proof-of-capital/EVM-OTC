@@ -21,6 +21,6 @@ library OTCConstants {
     uint8 public constant STATE_WAITING_FOR_CLIENT_ANSWER = 3;
     uint8 public constant STATE_CLIENT_ACCEPTED = 4;
     uint8 public constant STATE_CLIENT_REJECTED = 5;
-    uint8 public constant STATE_CANCELED = 6;
+    uint8 public constant STATE_FINAL = 6;
 }
 

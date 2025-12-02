@@ -228,7 +228,7 @@ contract OTC is IOTC, ReentrancyGuard {
         require(block.timestamp > supplyLockEndTime, IOTC.SupplyLockActive());
         require(block.timestamp > totalLockEndTime, IOTC.TotalLockActive());
 
-        _changeState(OTCConstants.STATE_CANCELED);
+        _changeState(OTCConstants.STATE_FINAL);
 
         emit OutputWithdrawn(CLIENT_ADDRESS, amount);
 
@@ -332,7 +332,7 @@ contract OTC is IOTC, ReentrancyGuard {
         require(INPUT_TOKEN != address(0), IOTC.InputTokenIsEth());
         require(
             currentState == OTCConstants.STATE_WAITING_FOR_CLIENT_ANSWER
-                || currentState == OTCConstants.STATE_CLIENT_REJECTED || currentState == OTCConstants.STATE_CANCELED,
+                || currentState == OTCConstants.STATE_CLIENT_REJECTED || currentState == OTCConstants.STATE_FINAL,
             IOTC.InvalidStateForBuyback(currentState)
         );
         require(
@@ -343,7 +343,7 @@ contract OTC is IOTC, ReentrancyGuard {
 
         require(outputAmount <= IERC20(OUTPUT_TOKEN).balanceOf(address(this)), IOTC.NotEnoughOutputToken());
 
-        _changeState(OTCConstants.STATE_CANCELED);
+        _changeState(OTCConstants.STATE_FINAL);
 
         IERC20(INPUT_TOKEN).safeTransferFrom(msg.sender, address(this), amount);
 
@@ -359,7 +359,7 @@ contract OTC is IOTC, ReentrancyGuard {
         require(INPUT_TOKEN == address(0), IOTC.InputTokenIsToken());
         require(
             currentState == OTCConstants.STATE_WAITING_FOR_CLIENT_ANSWER
-                || currentState == OTCConstants.STATE_CLIENT_REJECTED || currentState == OTCConstants.STATE_CANCELED,
+                || currentState == OTCConstants.STATE_CLIENT_REJECTED || currentState == OTCConstants.STATE_FINAL,
             IOTC.InvalidStateForBuyback(currentState)
         );
         require(
@@ -371,7 +371,7 @@ contract OTC is IOTC, ReentrancyGuard {
 
         require(outputAmount <= IERC20(OUTPUT_TOKEN).balanceOf(address(this)), IOTC.NotEnoughOutputToken());
 
-        _changeState(OTCConstants.STATE_CANCELED);
+        _changeState(OTCConstants.STATE_FINAL);
 
         IERC20(OUTPUT_TOKEN).safeTransfer(ADMIN_ADDRESS, outputAmount);
 
