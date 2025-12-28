@@ -4,7 +4,7 @@ pragma solidity ^0.8.29;
 import {Script} from "forge-std/Script.sol";
 import {console2} from "forge-std/console2.sol";
 import {OTCv2} from "../src/OTCv2.sol";
-import {IOTC} from "../src/interfaces/IOTC.sol";
+import {IOTCv2} from "../src/interfaces/IOTCv2.sol";
 
 /**
  * @title OTCv2 Deployment Script
@@ -28,7 +28,7 @@ contract OTCv2Script is Script {
         address admin = msg.sender;
 
         // Create supply stages array
-        IOTC.Supply[] memory supplies = new IOTC.Supply[](0);
+        IOTCv2.Supply[] memory supplies = new IOTCv2.Supply[](0);
 
         // // Configure supply stages (modify as needed)
         // supplies[0] = IOTC.Supply({
@@ -81,7 +81,7 @@ contract OTCv2Script is Script {
         address admin = msg.sender;
 
         // Empty supplies array for demand-side
-        IOTC.Supply[] memory supplies = new IOTC.Supply[](0);
+        IOTCv2.Supply[] memory supplies = new IOTCv2.Supply[](0);
 
         vm.startBroadcast();
 
