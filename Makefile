@@ -373,12 +373,37 @@ verify-otcv2-polygon:
 verify-otcv2-bsc:
 	@echo "Verifying OTCv2 contract on BSC..."
 	@if [ -z "$(CONTRACT_ADDRESS)" ]; then \
-		echo "Error: CONTRACT_ADDRESS not set"; \
+		echo "Error: CONTRACT_ADDRESS not set. Use: make verify-otcv2-bsc CONTRACT_ADDRESS=0x..."; \
 		exit 1; \
 	fi
+	@if [ -z "${BSCSCAN_API_KEY}" ]; then \
+		echo "Error: BSCSCAN_API_KEY not set in .env file"; \
+		exit 1; \
+	fi
+	@if [ -z "${INPUT_TOKEN}" ]; then \
+		echo "Error: INPUT_TOKEN not set in .env file (needed for constructor argument)"; \
+		exit 1; \
+	fi
+	@if [ -z "${OUTPUT_TOKEN}" ]; then \
+		echo "Error: OUTPUT_TOKEN not set in .env file (needed for constructor argument)"; \
+		exit 1; \
+	fi
+	@if [ -z "${ADMIN_ADDRESS}" ]; then \
+		echo "Error: ADMIN_ADDRESS not set in .env file (needed for constructor argument)"; \
+		exit 1; \
+	fi
+	@if [ -z "${CLIENT_ADDRESS}" ]; then \
+		echo "Error: CLIENT_ADDRESS not set in .env file (needed for constructor argument)"; \
+		exit 1; \
+	fi
+	@echo "Encoding constructor arguments..."
+	@CONSTRUCTOR_ARGS=$$(cast abi-encode "constructor(address,address,address,address,(uint256,uint256)[],uint256,uint256,uint256,bool)" ${INPUT_TOKEN} ${OUTPUT_TOKEN} ${ADMIN_ADDRESS} ${CLIENT_ADDRESS} "[]" ${BUYBACK_PRICE} ${MIN_OUTPUT_AMOUNT} ${MIN_INPUT_AMOUNT} ${IS_SUPPLY}); \
 	forge verify-contract $(CONTRACT_ADDRESS) src/OTCv2.sol:OTCv2 \
-		--chain-id $$(cast chain-id --rpc-url ${BSC_RPC}) \
-		--etherscan-api-key ${BSCSCAN_API_KEY}
+		--chain bsc \
+		--rpc-url ${BSC_RPC} \
+		--etherscan-api-key ${BSCSCAN_API_KEY} \
+		--verifier etherscan \
+		--constructor-args "$$CONSTRUCTOR_ARGS"
 	@echo "Verification completed!"
 
 # Legacy verify commands (default to OTC)
