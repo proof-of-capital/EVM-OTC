@@ -7,6 +7,3 @@
 [submodule "lib/openzeppelin-contracts"]
 	path = lib/openzeppelin-contracts
 	url = https://github.com/OpenZeppelin/openzeppelin-contracts
-[submodule "lib/DAO-EVM"]
-	path = lib/DAO-EVM
-	url = https://github.com/proof-of-capital/DAO-EVM.git

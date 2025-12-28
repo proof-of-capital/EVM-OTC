@@ -4,10 +4,10 @@
       "hash": "0xc1b4a2c57afd5420d5fb82cbe558e0657c4838b3b7a70727a6cc4eeaa3180d3d",
       "transactionType": "CREATE",
       "contractName": "OTCv2",
-      "contractAddress": "0xd77a710fb563bf0cfaf00973685185f4be12fa6f",
+      "contractAddress": "",
       "function": null,
       "arguments": [
-        "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d",
+        "0x8AC76a51cc950d9822D68b83fE1Ad90xd77a710fb563bf0cfaf00973685185f4be12fa6f7B32Cd580d",
         "0x55d398326f99059fF775485246999027B3197955",
         "0x936b81B949D3B833D4d6479c7A1f70f5cBBE0f02",
         "0xf341e3C328c22e25EF08a9a99E70EF8bDd47F7e8",
