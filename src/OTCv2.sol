@@ -4,7 +4,9 @@ pragma solidity ^0.8.29;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {IOTCv2} from "./interfaces/IOTCv2.sol";
 import {IOTC} from "./interfaces/IOTC.sol";
+import {IDAO} from "./interfaces/IDAO.sol";
 import {OTCConstants} from "./libraries/OTCConstants.sol";
 
 /**
@@ -20,7 +22,7 @@ import {OTCConstants} from "./libraries/OTCConstants.sol";
  * - Client approval system for farm account proposals
  * - Buyback mechanism at fixed price
  */
-contract OTCv2 is IOTC, ReentrancyGuard {
+contract OTCv2 is IOTCv2, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     // Contract state variables
@@ -283,7 +285,7 @@ contract OTCv2 is IOTC, ReentrancyGuard {
 
         _changeState(OTCConstants.STATE_WAITING_FOR_CLIENT_ANSWER);
 
-        emit FarmAccountProposed(_withdrawData.farmAccount, proposedTime);
+        emit FarmAccountProposed(_withdrawData.daoAddress, _withdrawData.vaultId, proposedTime);
     }
 
     /**
@@ -311,17 +313,14 @@ contract OTCv2 is IOTC, ReentrancyGuard {
     }
 
     /**
-     * @notice Admin sends output tokens to the approved farm account
+     * @notice Admin sends output tokens to the approved DAO vault
      */
     function sendToFarm() external override onlyAdmin inState(OTCConstants.STATE_CLIENT_ACCEPTED) nonReentrant {
-        IERC20(OUTPUT_TOKEN).safeIncreaseAllowance(withdrawData.farmAccount, MIN_OUTPUT_AMOUNT);
+        IERC20(OUTPUT_TOKEN).safeIncreaseAllowance(withdrawData.daoAddress, MIN_OUTPUT_AMOUNT);
 
-        emit TokensSentToFarm(withdrawData.farmAccount, MIN_OUTPUT_AMOUNT);
+        emit TokensSentToFarm(withdrawData.daoAddress, MIN_OUTPUT_AMOUNT);
 
-        if (withdrawData.sendData.length > 0) {
-            (bool success,) = withdrawData.farmAccount.call(withdrawData.sendData);
-            require(success, IOTC.FarmCallFailed());
-        }
+        IDAO(withdrawData.daoAddress).depositFundraising(MIN_OUTPUT_AMOUNT, withdrawData.vaultId);
     }
 
     /**

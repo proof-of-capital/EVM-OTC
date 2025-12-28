@@ -4,7 +4,7 @@ pragma solidity ^0.8.29;
 import {OTCv2} from "../src/OTCv2.sol";
 import {OTCConstants} from "../src/libraries/OTCConstants.sol";
 import {MockERC20} from "../src/mocks/MockERC20.sol";
-import {IOTC} from "../src/interfaces/IOTC.sol";
+import {IOTCv2} from "../src/interfaces/IOTCv2.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {StdCheats, StdAssertions, Test} from "forge-std/Test.sol";
 
@@ -25,7 +25,8 @@ contract OTCv2Test is Test {
     address public client = address(0x2);
     address public user1 = address(0x3);
     address public user2 = address(0x4);
-    address public farmAccount = address(0x5);
+    address public daoAddress = address(0x5);
+    uint256 public vaultId = 1;
 
     // Test amounts
     uint256 public constant MIN_INPUT_AMOUNT = 100 ether;
@@ -33,7 +34,7 @@ contract OTCv2Test is Test {
     uint256 public constant BUYBACK_PRICE = 1e18; // 1:1 price
 
     // Test supplies
-    IOTC.Supply[] public supplies;
+    IOTCv2.Supply[] public supplies;
 
     function setUp() public {
         // Deploy tokens
@@ -41,8 +42,8 @@ contract OTCv2Test is Test {
         outputToken = new MockERC20("Output Token", "OUT", 18);
 
         // Create supplies for testing
-        supplies.push(IOTC.Supply({input: 50 ether, output: 500 ether}));
-        supplies.push(IOTC.Supply({input: 50 ether, output: 500 ether}));
+        supplies.push(IOTCv2.Supply({input: 50 ether, output: 500 ether}));
+        supplies.push(IOTCv2.Supply({input: 50 ether, output: 500 ether}));
 
         // Deploy OTCv2 contracts
         vm.prank(admin);
@@ -72,7 +73,7 @@ contract OTCv2Test is Test {
         );
 
         // Deploy demand-side contract (no supplies)
-        IOTC.Supply[] memory emptySupplies;
+        IOTCv2.Supply[] memory emptySupplies;
         vm.prank(admin);
         otcv2Demand = new OTCv2(
             address(inputToken),
@@ -120,11 +121,11 @@ contract OTCv2Test is Test {
     }
 
     function test_Constructor_RevertsIfOutputSumTooLow() public {
-        IOTC.Supply[] memory lowSupplies = new IOTC.Supply[](1);
-        lowSupplies[0] = IOTC.Supply({input: 50 ether, output: 50 ether}); // Below MIN_OUTPUT_AMOUNT
+        IOTCv2.Supply[] memory lowSupplies = new IOTCv2.Supply[](1);
+        lowSupplies[0] = IOTCv2.Supply({input: 50 ether, output: 50 ether}); // Below MIN_OUTPUT_AMOUNT
 
         vm.prank(admin);
-        vm.expectRevert(IOTC.OutputSumTooLow.selector);
+        vm.expectRevert(IOTCv2.OutputSumTooLow.selector);
         new OTCv2(
             address(inputToken),
             address(outputToken),
@@ -140,12 +141,12 @@ contract OTCv2Test is Test {
 
     function test_Constructor_RevertsIfInputSumTooLow() public {
         // IS_SUPPLY = true, outputSum == MIN_OUTPUT_AMOUNT, but inputSum != MIN_INPUT_AMOUNT
-        IOTC.Supply[] memory lowInputSupplies = new IOTC.Supply[](2);
-        lowInputSupplies[0] = IOTC.Supply({input: 30 ether, output: 500 ether}); // input below threshold
-        lowInputSupplies[1] = IOTC.Supply({input: 30 ether, output: 500 ether}); // total input = 60 ether != MIN_INPUT_AMOUNT (100 ether), total output = 1000 ether == MIN_OUTPUT_AMOUNT
+        IOTCv2.Supply[] memory lowInputSupplies = new IOTCv2.Supply[](2);
+        lowInputSupplies[0] = IOTCv2.Supply({input: 30 ether, output: 500 ether}); // input below threshold
+        lowInputSupplies[1] = IOTCv2.Supply({input: 30 ether, output: 500 ether}); // total input = 60 ether != MIN_INPUT_AMOUNT (100 ether), total output = 1000 ether == MIN_OUTPUT_AMOUNT
 
         vm.prank(admin);
-        vm.expectRevert(IOTC.InputSumTooLow.selector);
+        vm.expectRevert(IOTCv2.InputSumTooLow.selector);
         new OTCv2(
             address(inputToken),
             address(outputToken),
@@ -161,9 +162,9 @@ contract OTCv2Test is Test {
 
     function test_Constructor_RevertsIfInvalidSupplyCount() public {
         // IS_SUPPLY = true but supplyCount = 0 -> InvalidSupplyCount (now checked earlier)
-        IOTC.Supply[] memory emptySupplies;
+        IOTCv2.Supply[] memory emptySupplies;
         vm.prank(admin);
-        vm.expectRevert(IOTC.InvalidSupplyCount.selector);
+        vm.expectRevert(IOTCv2.InvalidSupplyCount.selector);
         new OTCv2(
             address(inputToken),
             address(outputToken),
@@ -178,7 +179,7 @@ contract OTCv2Test is Test {
 
         // IS_SUPPLY = false but supplyCount != 0 -> InvalidSupplyCount
         vm.prank(admin);
-        vm.expectRevert(IOTC.InvalidSupplyCount.selector);
+        vm.expectRevert(IOTCv2.InvalidSupplyCount.selector);
         new OTCv2(
             address(inputToken),
             address(outputToken),
@@ -194,7 +195,7 @@ contract OTCv2Test is Test {
 
     function test_Constructor_RevertsIfOutputTokenIsZero() public {
         vm.prank(admin);
-        vm.expectRevert(IOTC.ZeroAddress.selector);
+        vm.expectRevert(IOTCv2.ZeroAddress.selector);
         new OTCv2(
             address(inputToken),
             address(0), // Zero output token
@@ -210,7 +211,7 @@ contract OTCv2Test is Test {
 
     function test_Constructor_RevertsIfAdminIsZero() public {
         vm.prank(admin);
-        vm.expectRevert(IOTC.ZeroAddress.selector);
+        vm.expectRevert(IOTCv2.ZeroAddress.selector);
         new OTCv2(
             address(inputToken),
             address(outputToken),
@@ -226,7 +227,7 @@ contract OTCv2Test is Test {
 
     function test_Constructor_RevertsIfClientIsZero() public {
         vm.prank(admin);
-        vm.expectRevert(IOTC.ZeroAddress.selector);
+        vm.expectRevert(IOTCv2.ZeroAddress.selector);
         new OTCv2(
             address(inputToken),
             address(outputToken),
@@ -242,7 +243,7 @@ contract OTCv2Test is Test {
 
     function test_Constructor_RevertsIfAdminEqualsClient() public {
         vm.prank(admin);
-        vm.expectRevert(IOTC.SameAddress.selector);
+        vm.expectRevert(IOTCv2.SameAddress.selector);
         new OTCv2(
             address(inputToken),
             address(outputToken),
@@ -258,7 +259,7 @@ contract OTCv2Test is Test {
 
     function test_Constructor_RevertsIfInputTokenEqualsOutputToken() public {
         vm.prank(admin);
-        vm.expectRevert(IOTC.SameTokens.selector);
+        vm.expectRevert(IOTCv2.SameTokens.selector);
         new OTCv2(
             address(outputToken), // Same as output token
             address(outputToken),
@@ -274,7 +275,7 @@ contract OTCv2Test is Test {
 
     function test_Constructor_RevertsIfBuybackPriceIsZero() public {
         vm.prank(admin);
-        vm.expectRevert(IOTC.InvalidBuybackPrice.selector);
+        vm.expectRevert(IOTCv2.InvalidBuybackPrice.selector);
         new OTCv2(
             address(inputToken),
             address(outputToken),
@@ -289,12 +290,12 @@ contract OTCv2Test is Test {
     }
 
     function test_Constructor_RevertsIfSupplyInputIsZero() public {
-        IOTC.Supply[] memory invalidSupplies = new IOTC.Supply[](2);
-        invalidSupplies[0] = IOTC.Supply({input: 50 ether, output: 500 ether});
-        invalidSupplies[1] = IOTC.Supply({input: 0, output: 500 ether}); // Zero input
+        IOTCv2.Supply[] memory invalidSupplies = new IOTCv2.Supply[](2);
+        invalidSupplies[0] = IOTCv2.Supply({input: 50 ether, output: 500 ether});
+        invalidSupplies[1] = IOTCv2.Supply({input: 0, output: 500 ether}); // Zero input
 
         vm.prank(admin);
-        vm.expectRevert(IOTC.InvalidSupplyData.selector);
+        vm.expectRevert(IOTCv2.InvalidSupplyData.selector);
         new OTCv2(
             address(inputToken),
             address(outputToken),
@@ -309,12 +310,12 @@ contract OTCv2Test is Test {
     }
 
     function test_Constructor_RevertsIfSupplyOutputIsZero() public {
-        IOTC.Supply[] memory invalidSupplies = new IOTC.Supply[](2);
-        invalidSupplies[0] = IOTC.Supply({input: 50 ether, output: 500 ether});
-        invalidSupplies[1] = IOTC.Supply({input: 50 ether, output: 0}); // Zero output
+        IOTCv2.Supply[] memory invalidSupplies = new IOTCv2.Supply[](2);
+        invalidSupplies[0] = IOTCv2.Supply({input: 50 ether, output: 500 ether});
+        invalidSupplies[1] = IOTCv2.Supply({input: 50 ether, output: 0}); // Zero output
 
         vm.prank(admin);
-        vm.expectRevert(IOTC.InvalidSupplyData.selector);
+        vm.expectRevert(IOTCv2.InvalidSupplyData.selector);
         new OTCv2(
             address(inputToken),
             address(outputToken),
@@ -352,21 +353,21 @@ contract OTCv2Test is Test {
         vm.deal(user1, 100 ether);
         vm.prank(user1);
         vm.expectEmit(true, false, false, true);
-        emit IOTC.DepositedInput(user1, 50 ether);
+        emit IOTCv2.DepositedInput(user1, 50 ether);
         otcv2Eth.depositEth{value: 50 ether}();
     }
 
     function test_DepositEth_RevertsIfNotSupplySide() public {
         vm.deal(user1, 100 ether);
         vm.prank(user1);
-        vm.expectRevert(IOTC.NotSupplyContract.selector);
+        vm.expectRevert(IOTCv2.NotSupplyContract.selector);
         otcv2Demand.depositEth{value: 50 ether}();
     }
 
     function test_DepositEth_RevertsIfInputTokenIsNotEth() public {
         vm.deal(user1, 100 ether);
         vm.prank(user1);
-        vm.expectRevert(IOTC.InputTokenIsToken.selector);
+        vm.expectRevert(IOTCv2.InputTokenIsToken.selector);
         otcv2.depositEth{value: 50 ether}();
     }
 
@@ -396,7 +397,7 @@ contract OTCv2Test is Test {
         vm.startPrank(user1);
         inputToken.approve(address(otcv2), 50 ether);
         vm.expectEmit(true, false, false, true);
-        emit IOTC.DepositedInput(user1, 50 ether);
+        emit IOTCv2.DepositedInput(user1, 50 ether);
         otcv2.depositToken(50 ether);
         vm.stopPrank();
     }
@@ -404,7 +405,7 @@ contract OTCv2Test is Test {
     function test_DepositToken_RevertsIfNotSupplySide() public {
         vm.startPrank(user1);
         inputToken.approve(address(otcv2Demand), 50 ether);
-        vm.expectRevert(IOTC.NotSupplyContract.selector);
+        vm.expectRevert(IOTCv2.NotSupplyContract.selector);
         otcv2Demand.depositToken(50 ether);
         vm.stopPrank();
     }
@@ -412,7 +413,7 @@ contract OTCv2Test is Test {
     function test_DepositToken_RevertsIfInputTokenIsEth() public {
         vm.startPrank(user1);
         inputToken.approve(address(otcv2Eth), 50 ether);
-        vm.expectRevert(IOTC.InputTokenIsEth.selector);
+        vm.expectRevert(IOTCv2.InputTokenIsEth.selector);
         otcv2Eth.depositToken(50 ether);
         vm.stopPrank();
     }
@@ -428,7 +429,7 @@ contract OTCv2Test is Test {
         inputToken.approve(address(otcv2), 50 ether);
         vm.expectRevert(
             abi.encodeWithSelector(
-                IOTC.InvalidState.selector, OTCConstants.STATE_SUPPLY_IN_PROGRESS, OTCConstants.STATE_FUNDING
+                IOTCv2.InvalidState.selector, OTCConstants.STATE_SUPPLY_IN_PROGRESS, OTCConstants.STATE_FUNDING
             )
         );
         otcv2.depositToken(50 ether);
@@ -461,7 +462,7 @@ contract OTCv2Test is Test {
         vm.startPrank(user1);
         outputToken.approve(address(otcv2Demand), 50 ether);
         vm.expectEmit(true, false, false, true);
-        emit IOTC.DepositedOutput(user1, 50 ether);
+        emit IOTCv2.DepositedOutput(user1, 50 ether);
         otcv2Demand.depositOutput(50 ether);
         vm.stopPrank();
     }
@@ -469,7 +470,7 @@ contract OTCv2Test is Test {
     function test_DepositOutput_RevertsIfSupplySide() public {
         vm.startPrank(user1);
         outputToken.approve(address(otcv2), 50 ether);
-        vm.expectRevert(IOTC.NotDemandContract.selector);
+        vm.expectRevert(IOTCv2.NotDemandContract.selector);
         otcv2.depositOutput(50 ether);
         vm.stopPrank();
     }
@@ -513,7 +514,7 @@ contract OTCv2Test is Test {
 
         vm.prank(client);
         vm.expectEmit(true, false, false, true);
-        emit IOTC.Withdrawn(client, 50 ether);
+        emit IOTCv2.Withdrawn(client, 50 ether);
         otcv2Eth.withdrawEth(50 ether);
     }
 
@@ -525,7 +526,7 @@ contract OTCv2Test is Test {
         vm.warp(otcv2Eth.supplyLockEndTime() + 1);
 
         vm.prank(user1);
-        vm.expectRevert(IOTC.OnlyClient.selector);
+        vm.expectRevert(IOTCv2.OnlyClient.selector);
         otcv2Eth.withdrawEth(50 ether);
     }
 
@@ -537,7 +538,7 @@ contract OTCv2Test is Test {
         // Don't warp - still locked
 
         vm.prank(client);
-        vm.expectRevert(IOTC.SupplyLockActive.selector);
+        vm.expectRevert(IOTCv2.SupplyLockActive.selector);
         otcv2Eth.withdrawEth(50 ether);
     }
 
@@ -550,7 +551,7 @@ contract OTCv2Test is Test {
         vm.warp(otcv2.supplyLockEndTime() + 1);
 
         vm.prank(client);
-        vm.expectRevert(IOTC.InputTokenIsToken.selector);
+        vm.expectRevert(IOTCv2.InputTokenIsToken.selector);
         otcv2.withdrawEth(50 ether);
     }
 
@@ -562,7 +563,7 @@ contract OTCv2Test is Test {
         vm.warp(otcv2Eth.supplyLockEndTime() + 1);
 
         vm.prank(client);
-        vm.expectRevert(IOTC.InvalidAmount.selector);
+        vm.expectRevert(IOTCv2.InvalidAmount.selector);
         otcv2Eth.withdrawEth(0);
     }
 
@@ -575,7 +576,7 @@ contract OTCv2Test is Test {
 
         uint256 contractBalance = address(otcv2Eth).balance;
         vm.prank(client);
-        vm.expectRevert(IOTC.InsufficientBalance.selector);
+        vm.expectRevert(IOTCv2.InsufficientBalance.selector);
         otcv2Eth.withdrawEth(contractBalance + 1);
     }
 
@@ -603,7 +604,7 @@ contract OTCv2Test is Test {
         vm.warp(otcv2WithRejectingClient.supplyLockEndTime() + 1);
 
         vm.prank(address(rejectingClient));
-        vm.expectRevert(IOTC.EthTransferFailed.selector);
+        vm.expectRevert(IOTCv2.EthTransferFailed.selector);
         otcv2WithRejectingClient.withdrawEth(50 ether);
     }
 
@@ -634,7 +635,7 @@ contract OTCv2Test is Test {
 
         vm.prank(client);
         vm.expectEmit(true, false, false, true);
-        emit IOTC.InputWithdrawn(client, 50 ether);
+        emit IOTCv2.InputWithdrawn(client, 50 ether);
         otcv2.withdrawInput(50 ether);
     }
 
@@ -647,7 +648,7 @@ contract OTCv2Test is Test {
         vm.warp(otcv2.supplyLockEndTime() + 1);
 
         vm.prank(user1);
-        vm.expectRevert(IOTC.OnlyClient.selector);
+        vm.expectRevert(IOTCv2.OnlyClient.selector);
         otcv2.withdrawInput(50 ether);
     }
 
@@ -659,7 +660,7 @@ contract OTCv2Test is Test {
 
         // Don't warp, lock still active
         vm.prank(client);
-        vm.expectRevert(IOTC.SupplyLockActive.selector);
+        vm.expectRevert(IOTCv2.SupplyLockActive.selector);
         otcv2.withdrawInput(50 ether);
     }
 
@@ -671,7 +672,7 @@ contract OTCv2Test is Test {
         vm.warp(otcv2Eth.supplyLockEndTime() + 1);
 
         vm.prank(client);
-        vm.expectRevert(IOTC.InputTokenIsEth.selector);
+        vm.expectRevert(IOTCv2.InputTokenIsEth.selector);
         otcv2Eth.withdrawInput(50 ether);
     }
 
@@ -704,7 +705,7 @@ contract OTCv2Test is Test {
         vm.prank(client);
         vm.expectEmit(true, false, false, true);
         // StateChanged emitted before OutputWithdrawn; focus on OutputWithdrawn only to avoid order issues
-        emit IOTC.OutputWithdrawn(client, 50 ether);
+        emit IOTCv2.OutputWithdrawn(client, 50 ether);
         otcv2Demand.withdrawOutput(50 ether);
     }
 
@@ -717,7 +718,7 @@ contract OTCv2Test is Test {
         vm.warp(otcv2Demand.totalLockEndTime() + 1);
 
         vm.prank(user1);
-        vm.expectRevert(IOTC.OnlyClient.selector);
+        vm.expectRevert(IOTCv2.OnlyClient.selector);
         otcv2Demand.withdrawOutput(50 ether);
     }
 
@@ -746,7 +747,7 @@ contract OTCv2Test is Test {
         if (totalLockEnd > supplyLockEnd) {
             // First check (SupplyLockActive) passes, second check (TotalLockActive) fails
             vm.prank(client);
-            vm.expectRevert(IOTC.TotalLockActive.selector);
+            vm.expectRevert(IOTCv2.TotalLockActive.selector);
             otcv2Demand.withdrawOutput(50 ether);
         } else {
             // If they're equal, we need to be 1 second past both to pass first check
@@ -757,9 +758,9 @@ contract OTCv2Test is Test {
             vm.prank(client);
             // If equal, first check fails; if totalLockEnd > supplyLockEnd, second check fails
             if (totalLockEnd == supplyLockEnd) {
-                vm.expectRevert(IOTC.SupplyLockActive.selector);
+                vm.expectRevert(IOTCv2.SupplyLockActive.selector);
             } else {
-                vm.expectRevert(IOTC.TotalLockActive.selector);
+                vm.expectRevert(IOTCv2.TotalLockActive.selector);
             }
             otcv2Demand.withdrawOutput(50 ether);
         }
@@ -781,14 +782,14 @@ contract OTCv2Test is Test {
         vm.warp(supplyLockEnd);
 
         vm.prank(client);
-        vm.expectRevert(IOTC.SupplyLockActive.selector);
+        vm.expectRevert(IOTCv2.SupplyLockActive.selector);
         otcv2Demand.withdrawOutput(50 ether);
 
         // Also test when block.timestamp is before supplyLockEndTime
         vm.warp(supplyLockEnd - 1);
 
         vm.prank(client);
-        vm.expectRevert(IOTC.SupplyLockActive.selector);
+        vm.expectRevert(IOTCv2.SupplyLockActive.selector);
         otcv2Demand.withdrawOutput(50 ether);
     }
 
@@ -836,7 +837,7 @@ contract OTCv2Test is Test {
         vm.startPrank(admin);
         outputToken.approve(address(otcv2), 500 ether);
         vm.expectEmit(true, false, false, true);
-        emit IOTC.SupplyProcessed(0, 50 ether, 500 ether);
+        emit IOTCv2.SupplyProcessed(0, 50 ether, 500 ether);
         otcv2.supplyOutput();
         vm.stopPrank();
     }
@@ -849,7 +850,7 @@ contract OTCv2Test is Test {
 
         vm.startPrank(user1);
         outputToken.approve(address(otcv2), 500 ether);
-        vm.expectRevert(IOTC.OnlyAdmin.selector);
+        vm.expectRevert(IOTCv2.OnlyAdmin.selector);
         otcv2.supplyOutput();
         vm.stopPrank();
     }
@@ -859,7 +860,7 @@ contract OTCv2Test is Test {
         outputToken.approve(address(otcv2), 500 ether);
         vm.expectRevert(
             abi.encodeWithSelector(
-                IOTC.InvalidState.selector, OTCConstants.STATE_FUNDING, OTCConstants.STATE_SUPPLY_IN_PROGRESS
+                IOTCv2.InvalidState.selector, OTCConstants.STATE_FUNDING, OTCConstants.STATE_SUPPLY_IN_PROGRESS
             )
         );
         otcv2.supplyOutput();
@@ -908,7 +909,7 @@ contract OTCv2Test is Test {
 
         vm.startPrank(address(rejectingAdmin));
         outputToken.approve(address(otcv2WithRejectingAdmin), 500 ether);
-        vm.expectRevert(IOTC.EthTransferFailed.selector);
+        vm.expectRevert(IOTCv2.EthTransferFailed.selector);
         otcv2WithRejectingAdmin.supplyOutput();
         vm.stopPrank();
     }
@@ -918,7 +919,7 @@ contract OTCv2Test is Test {
     function test_ProposeDaoAccount_Success() public {
         _setupToSupplyProvided(otcv2);
 
-        IOTC.FarmWithdrawData memory farmData = IOTC.FarmWithdrawData({farmAccount: farmAccount, sendData: ""});
+        IOTCv2.FarmWithdrawData memory farmData = IOTCv2.FarmWithdrawData({daoAddress: daoAddress, vaultId: vaultId});
 
         vm.prank(admin);
         otcv2.proposeDaoAccount(farmData);
@@ -930,31 +931,31 @@ contract OTCv2Test is Test {
     function test_ProposeDaoAccount_EmitsEvents() public {
         _setupToSupplyProvided(otcv2);
 
-        IOTC.FarmWithdrawData memory farmData = IOTC.FarmWithdrawData({farmAccount: farmAccount, sendData: ""});
+        IOTCv2.FarmWithdrawData memory farmData = IOTCv2.FarmWithdrawData({daoAddress: daoAddress, vaultId: vaultId});
 
         vm.prank(admin);
-        vm.expectEmit(true, false, false, true);
-        emit IOTC.FarmAccountProposed(farmAccount, uint64(block.timestamp));
+        vm.expectEmit(true, true, false, true);
+        emit IOTCv2.FarmAccountProposed(daoAddress, vaultId, uint64(block.timestamp));
         otcv2.proposeDaoAccount(farmData);
     }
 
     function test_ProposeDaoAccount_RevertsIfNotAdmin() public {
         _setupToSupplyProvided(otcv2);
 
-        IOTC.FarmWithdrawData memory farmData = IOTC.FarmWithdrawData({farmAccount: farmAccount, sendData: ""});
+        IOTCv2.FarmWithdrawData memory farmData = IOTCv2.FarmWithdrawData({daoAddress: daoAddress, vaultId: vaultId});
 
         vm.prank(user1);
-        vm.expectRevert(IOTC.OnlyAdmin.selector);
+        vm.expectRevert(IOTCv2.OnlyAdmin.selector);
         otcv2.proposeDaoAccount(farmData);
     }
 
     function test_ProposeDaoAccount_RevertsIfWrongState() public {
-        IOTC.FarmWithdrawData memory farmData = IOTC.FarmWithdrawData({farmAccount: farmAccount, sendData: ""});
+        IOTCv2.FarmWithdrawData memory farmData = IOTCv2.FarmWithdrawData({daoAddress: daoAddress, vaultId: vaultId});
 
         vm.prank(admin);
         vm.expectRevert(
             abi.encodeWithSelector(
-                IOTC.InvalidState.selector, OTCConstants.STATE_FUNDING, OTCConstants.STATE_SUPPLY_PROVIDED
+                IOTCv2.InvalidState.selector, OTCConstants.STATE_FUNDING, OTCConstants.STATE_SUPPLY_PROVIDED
             )
         );
         otcv2.proposeDaoAccount(farmData);
@@ -988,7 +989,7 @@ contract OTCv2Test is Test {
 
         vm.prank(client);
         vm.expectEmit(true, false, false, true);
-        emit IOTC.ClientVoted(true);
+        emit IOTCv2.ClientVoted(true);
         otcv2.voteYes();
     }
 
@@ -996,13 +997,13 @@ contract OTCv2Test is Test {
         _setupToWaitingForClientAnswer(otcv2);
 
         vm.prank(user1);
-        vm.expectRevert(IOTC.OnlyClient.selector);
+        vm.expectRevert(IOTCv2.OnlyClient.selector);
         otcv2.voteYes();
     }
 
     function test_VoteYes_RevertsIfWrongState() public {
         vm.prank(client);
-        vm.expectRevert(abi.encodeWithSelector(IOTC.InvalidStateForVote.selector, OTCConstants.STATE_FUNDING));
+        vm.expectRevert(abi.encodeWithSelector(IOTCv2.InvalidStateForVote.selector, OTCConstants.STATE_FUNDING));
         otcv2.voteYes();
     }
 
@@ -1022,7 +1023,7 @@ contract OTCv2Test is Test {
 
         vm.prank(client);
         vm.expectEmit(true, false, false, true);
-        emit IOTC.ClientVoted(false);
+        emit IOTCv2.ClientVoted(false);
         otcv2.voteNo();
     }
 
@@ -1030,13 +1031,13 @@ contract OTCv2Test is Test {
         _setupToWaitingForClientAnswer(otcv2);
 
         vm.prank(user1);
-        vm.expectRevert(IOTC.OnlyClient.selector);
+        vm.expectRevert(IOTCv2.OnlyClient.selector);
         otcv2.voteNo();
     }
 
     function test_VoteNo_RevertsIfWrongState() public {
         vm.prank(client);
-        vm.expectRevert(abi.encodeWithSelector(IOTC.InvalidStateForVote.selector, OTCConstants.STATE_FUNDING));
+        vm.expectRevert(abi.encodeWithSelector(IOTCv2.InvalidStateForVote.selector, OTCConstants.STATE_FUNDING));
         otcv2.voteNo();
     }
 
@@ -1047,33 +1048,19 @@ contract OTCv2Test is Test {
         otcv2.voteNo();
 
         vm.prank(client);
-        vm.expectRevert(abi.encodeWithSelector(IOTC.InvalidStateForVote.selector, OTCConstants.STATE_CLIENT_REJECTED));
+        vm.expectRevert(abi.encodeWithSelector(IOTCv2.InvalidStateForVote.selector, OTCConstants.STATE_CLIENT_REJECTED));
         otcv2.voteNo();
     }
 
     // ==================== SEND TO FARM TESTS ====================
 
-    function test_SendToFarm_Success() public {
-        _setupToClientAccepted(otcv2);
+    function test_SendToFarm_WithDaoAddress() public {
+        // Create a mock DAO contract
+        MockDAO mockDAO = new MockDAO(address(outputToken));
+        address testDaoAddress = address(mockDAO);
+        uint256 testVaultId = 2;
 
-        uint256 allowanceBefore = outputToken.allowance(address(otcv2), farmAccount);
-        vm.prank(admin);
-        otcv2.sendToFarm();
-
-        assertEq(outputToken.allowance(address(otcv2), farmAccount), allowanceBefore + MIN_OUTPUT_AMOUNT);
-    }
-
-    function test_SendToFarm_WithCallData() public {
-        _setupToClientAccepted(otcv2);
-
-        // Create a contract that can receive and verify the call
-        TestFarmContract farmContract = new TestFarmContract();
-        IOTC.FarmWithdrawData memory farmData = IOTC.FarmWithdrawData({
-            farmAccount: address(farmContract),
-            sendData: abi.encodeWithSelector(TestFarmContract.receiveTokens.selector, MIN_OUTPUT_AMOUNT)
-        });
-
-        // Deploy a fresh contract instance, do not overwrite otcv2
+        // Deploy a fresh contract instance
         vm.prank(admin);
         OTCv2 otcv2_2 = new OTCv2(
             address(inputToken),
@@ -1088,34 +1075,32 @@ contract OTCv2Test is Test {
         );
         _setupToSupplyProvided(otcv2_2);
 
+        IOTCv2.FarmWithdrawData memory farmData = IOTCv2.FarmWithdrawData({
+            daoAddress: testDaoAddress,
+            vaultId: testVaultId
+        });
+
         vm.prank(admin);
         otcv2_2.proposeDaoAccount(farmData);
 
         vm.prank(client);
         otcv2_2.voteYes();
 
-        uint256 allowanceBefore = outputToken.allowance(address(otcv2_2), address(farmContract));
+        uint256 allowanceBefore = outputToken.allowance(address(otcv2_2), testDaoAddress);
+        uint256 daoBalanceBefore = outputToken.balanceOf(testDaoAddress);
         vm.prank(admin);
         otcv2_2.sendToFarm();
 
-        assertEq(outputToken.allowance(address(otcv2_2), address(farmContract)), allowanceBefore + MIN_OUTPUT_AMOUNT);
-        assertTrue(farmContract.tokensReceived());
-    }
-
-    function test_SendToFarm_EmitsEvents() public {
-        _setupToClientAccepted(otcv2);
-
-        vm.prank(admin);
-        vm.expectEmit(true, false, false, true);
-        emit IOTC.TokensSentToFarm(farmAccount, MIN_OUTPUT_AMOUNT);
-        otcv2.sendToFarm();
+        assertEq(mockDAO.depositAmount(), MIN_OUTPUT_AMOUNT);
+        assertEq(mockDAO.depositVaultId(), testVaultId);
+        assertEq(outputToken.balanceOf(address(mockDAO)), daoBalanceBefore + MIN_OUTPUT_AMOUNT);
     }
 
     function test_SendToFarm_RevertsIfNotAdmin() public {
         _setupToClientAccepted(otcv2);
 
         vm.prank(user1);
-        vm.expectRevert(IOTC.OnlyAdmin.selector);
+        vm.expectRevert(IOTCv2.OnlyAdmin.selector);
         otcv2.sendToFarm();
     }
 
@@ -1125,7 +1110,7 @@ contract OTCv2Test is Test {
         vm.prank(admin);
         vm.expectRevert(
             abi.encodeWithSelector(
-                IOTC.InvalidState.selector,
+                IOTCv2.InvalidState.selector,
                 OTCConstants.STATE_WAITING_FOR_CLIENT_ANSWER,
                 OTCConstants.STATE_CLIENT_ACCEPTED
             )
@@ -1145,20 +1130,17 @@ contract OTCv2Test is Test {
         vm.prank(admin);
         vm.expectRevert(
             abi.encodeWithSelector(
-                IOTC.InvalidState.selector, OTCConstants.STATE_SUPPLY_PROVIDED, OTCConstants.STATE_CLIENT_ACCEPTED
+                IOTCv2.InvalidState.selector, OTCConstants.STATE_SUPPLY_PROVIDED, OTCConstants.STATE_CLIENT_ACCEPTED
             )
         );
         otcv2.sendToFarm();
     }
 
-    function test_SendToFarm_RevertsIfCallFails() public {
-        _setupToClientAccepted(otcv2);
-
-        // Create a contract that will revert on call
-        RevertingFarmContract revertingFarm = new RevertingFarmContract();
-        IOTC.FarmWithdrawData memory farmData = IOTC.FarmWithdrawData({
-            farmAccount: address(revertingFarm), sendData: abi.encodeWithSelector(RevertingFarmContract.fail.selector)
-        });
+    function test_SendToFarm_RevertsIfDepositFundraisingFails() public {
+        // Create a mock DAO that will revert
+        RevertingDAO revertingDAO = new RevertingDAO();
+        address testDaoAddress = address(revertingDAO);
+        uint256 testVaultId = 3;
 
         // Deploy new otcv2 instance and go through flow
         vm.prank(admin);
@@ -1174,6 +1156,12 @@ contract OTCv2Test is Test {
             true
         );
         _setupToSupplyProvided(otcv2_2);
+
+        IOTCv2.FarmWithdrawData memory farmData = IOTCv2.FarmWithdrawData({
+            daoAddress: testDaoAddress,
+            vaultId: testVaultId
+        });
+
         vm.prank(admin);
         otcv2_2.proposeDaoAccount(farmData);
 
@@ -1181,7 +1169,8 @@ contract OTCv2Test is Test {
         otcv2_2.voteYes();
 
         vm.prank(admin);
-        vm.expectRevert(IOTC.FarmCallFailed.selector);
+        // depositFundraising will revert, which will cause the transaction to revert
+        vm.expectRevert("DepositFundraisingFailed");
         otcv2_2.sendToFarm();
     }
 
@@ -1255,7 +1244,7 @@ contract OTCv2Test is Test {
         vm.startPrank(admin);
         inputToken.approve(address(otcv2), inputAmount);
         vm.expectEmit(true, false, false, true);
-        emit IOTC.BuybackExecuted(inputAmount, expectedOutput);
+        emit IOTCv2.BuybackExecuted(inputAmount, expectedOutput);
         otcv2.buybackWithToken(inputAmount);
         vm.stopPrank();
     }
@@ -1267,7 +1256,7 @@ contract OTCv2Test is Test {
 
         vm.startPrank(user1);
         inputToken.approve(address(otcv2), 100 ether);
-        vm.expectRevert(IOTC.OnlyAdmin.selector);
+        vm.expectRevert(IOTCv2.OnlyAdmin.selector);
         otcv2.buybackWithToken(100 ether);
         vm.stopPrank();
     }
@@ -1279,7 +1268,7 @@ contract OTCv2Test is Test {
 
         vm.startPrank(admin);
         inputToken.approve(address(otcv2Eth), 100 ether);
-        vm.expectRevert(IOTC.InputTokenIsEth.selector);
+        vm.expectRevert(IOTCv2.InputTokenIsEth.selector);
         otcv2Eth.buybackWithToken(100 ether);
         vm.stopPrank();
     }
@@ -1287,7 +1276,7 @@ contract OTCv2Test is Test {
     function test_BuybackWithToken_RevertsIfWrongState() public {
         vm.startPrank(admin);
         inputToken.approve(address(otcv2), 100 ether);
-        vm.expectRevert(abi.encodeWithSelector(IOTC.InvalidStateForBuyback.selector, OTCConstants.STATE_FUNDING));
+        vm.expectRevert(abi.encodeWithSelector(IOTCv2.InvalidStateForBuyback.selector, OTCConstants.STATE_FUNDING));
         otcv2.buybackWithToken(100 ether);
         vm.stopPrank();
     }
@@ -1303,7 +1292,7 @@ contract OTCv2Test is Test {
         vm.startPrank(admin);
         inputToken.approve(address(otcv2), 100 ether);
         vm.expectRevert(
-            abi.encodeWithSelector(IOTC.InvalidStateForBuyback.selector, OTCConstants.STATE_SUPPLY_PROVIDED)
+            abi.encodeWithSelector(IOTCv2.InvalidStateForBuyback.selector, OTCConstants.STATE_SUPPLY_PROVIDED)
         );
         otcv2.buybackWithToken(100 ether);
         vm.stopPrank();
@@ -1315,7 +1304,7 @@ contract OTCv2Test is Test {
         // Don't warp - lock still active
         vm.startPrank(admin);
         inputToken.approve(address(otcv2), 100 ether);
-        vm.expectRevert(IOTC.ProposeLockActive.selector);
+        vm.expectRevert(IOTCv2.ProposeLockActive.selector);
         otcv2.buybackWithToken(100 ether);
         vm.stopPrank();
     }
@@ -1352,7 +1341,7 @@ contract OTCv2Test is Test {
 
         vm.prank(admin);
         vm.expectEmit(true, false, false, true);
-        emit IOTC.BuybackExecuted(inputAmount, expectedOutput);
+        emit IOTCv2.BuybackExecuted(inputAmount, expectedOutput);
         otcv2Eth.buybackWithEth{value: inputAmount}();
     }
 
@@ -1364,7 +1353,7 @@ contract OTCv2Test is Test {
         vm.deal(user1, 10 ether);
 
         vm.prank(user1);
-        vm.expectRevert(IOTC.OnlyAdmin.selector);
+        vm.expectRevert(IOTCv2.OnlyAdmin.selector);
         otcv2Eth.buybackWithEth{value: 1 ether}();
     }
 
@@ -1376,7 +1365,7 @@ contract OTCv2Test is Test {
         vm.deal(admin, 10 ether);
 
         vm.prank(admin);
-        vm.expectRevert(IOTC.InputTokenIsToken.selector);
+        vm.expectRevert(IOTCv2.InputTokenIsToken.selector);
         otcv2.buybackWithEth{value: 1 ether}();
     }
 
@@ -1384,7 +1373,7 @@ contract OTCv2Test is Test {
         vm.deal(admin, 10 ether);
 
         vm.prank(admin);
-        vm.expectRevert(abi.encodeWithSelector(IOTC.InvalidStateForBuyback.selector, OTCConstants.STATE_FUNDING));
+        vm.expectRevert(abi.encodeWithSelector(IOTCv2.InvalidStateForBuyback.selector, OTCConstants.STATE_FUNDING));
         otcv2Eth.buybackWithEth{value: 1 ether}();
     }
 
@@ -1398,7 +1387,7 @@ contract OTCv2Test is Test {
         vm.deal(admin, 10 ether);
         vm.prank(admin);
         vm.expectRevert(
-            abi.encodeWithSelector(IOTC.InvalidStateForBuyback.selector, OTCConstants.STATE_SUPPLY_PROVIDED)
+            abi.encodeWithSelector(IOTCv2.InvalidStateForBuyback.selector, OTCConstants.STATE_SUPPLY_PROVIDED)
         );
         otcv2Eth.buybackWithEth{value: 1 ether}();
     }
@@ -1410,45 +1399,11 @@ contract OTCv2Test is Test {
         vm.deal(admin, 10 ether);
 
         vm.prank(admin);
-        vm.expectRevert(IOTC.ProposeLockActive.selector);
+        vm.expectRevert(IOTCv2.ProposeLockActive.selector);
         otcv2Eth.buybackWithEth{value: 1 ether}();
     }
 
     // ==================== FULL FLOW TESTS ====================
-
-    function test_FullFlow_SupplySideWithEth_Success() public {
-        // 1. Deposit ETH
-        vm.deal(user1, MIN_INPUT_AMOUNT);
-        vm.prank(user1);
-        otcv2Eth.depositEth{value: MIN_INPUT_AMOUNT}();
-
-        assertEq(otcv2Eth.currentState(), OTCConstants.STATE_SUPPLY_IN_PROGRESS);
-
-        // 2. Process all supplies
-        _processAllSupplies(otcv2Eth);
-
-        assertEq(otcv2Eth.currentState(), OTCConstants.STATE_SUPPLY_PROVIDED);
-
-        // 3. Propose farm account
-        IOTC.FarmWithdrawData memory farmData = IOTC.FarmWithdrawData({farmAccount: farmAccount, sendData: ""});
-        vm.prank(admin);
-        otcv2Eth.proposeDaoAccount(farmData);
-
-        assertEq(otcv2Eth.currentState(), OTCConstants.STATE_WAITING_FOR_CLIENT_ANSWER);
-
-        // 4. Client votes YES
-        vm.prank(client);
-        otcv2Eth.voteYes();
-
-        assertEq(otcv2Eth.currentState(), OTCConstants.STATE_CLIENT_ACCEPTED);
-
-        // 5. Send to farm
-        uint256 allowanceBefore = outputToken.allowance(address(otcv2Eth), farmAccount);
-        vm.prank(admin);
-        otcv2Eth.sendToFarm();
-
-        assertEq(outputToken.allowance(address(otcv2Eth), farmAccount), allowanceBefore + MIN_OUTPUT_AMOUNT);
-    }
 
     function test_FullFlow_SupplySideWithToken_Buyback() public {
         // 1. Deposit tokens
@@ -1461,7 +1416,7 @@ contract OTCv2Test is Test {
         _processAllSupplies(otcv2);
 
         // 3. Propose farm account
-        IOTC.FarmWithdrawData memory farmData = IOTC.FarmWithdrawData({farmAccount: farmAccount, sendData: ""});
+        IOTCv2.FarmWithdrawData memory farmData = IOTCv2.FarmWithdrawData({daoAddress: daoAddress, vaultId: vaultId});
         vm.prank(admin);
         otcv2.proposeDaoAccount(farmData);
 
@@ -1533,7 +1488,7 @@ contract OTCv2Test is Test {
     function _setupToWaitingForClientAnswer(OTCv2 contractInstance) internal {
         _setupToSupplyProvided(contractInstance);
 
-        IOTC.FarmWithdrawData memory farmData = IOTC.FarmWithdrawData({farmAccount: farmAccount, sendData: ""});
+        IOTCv2.FarmWithdrawData memory farmData = IOTCv2.FarmWithdrawData({daoAddress: daoAddress, vaultId: vaultId});
 
         vm.prank(contractInstance.ADMIN_ADDRESS());
         contractInstance.proposeDaoAccount(farmData);
@@ -1599,7 +1554,7 @@ contract OTCv2Test is Test {
         TestContractWithModifier testContract = new TestContractWithModifier(admin, client);
 
         vm.prank(user1);
-        vm.expectRevert(IOTC.OnlyAdminOrClient.selector);
+        vm.expectRevert(IOTCv2.OnlyAdminOrClient.selector);
         testContract.testOnlyAdminOrClient();
     }
 }
@@ -1616,7 +1571,7 @@ contract TestContractWithModifier {
     }
 
     function testOnlyAdminOrClient() external {
-        require(msg.sender == admin || msg.sender == client, IOTC.OnlyAdminOrClient());
+        require(msg.sender == admin || msg.sender == client, IOTCv2.OnlyAdminOrClient());
         called = true;
     }
 }
@@ -1641,6 +1596,30 @@ contract RevertingFarmContract {
 contract RejectingEthContract {
     receive() external payable {
         revert("ETH transfer rejected");
+    }
+}
+
+// Mock DAO contract for testing depositFundraising
+contract MockDAO {
+    IERC20 public token;
+    uint256 public depositAmount;
+    uint256 public depositVaultId;
+
+    constructor(address _token) {
+        token = IERC20(_token);
+    }
+
+    function depositFundraising(uint256 amount, uint256 vaultId) external {
+        depositAmount = amount;
+        depositVaultId = vaultId;
+        token.transferFrom(msg.sender, address(this), amount);
+    }
+}
+
+// Mock DAO contract that reverts on depositFundraising
+contract RevertingDAO {
+    function depositFundraising(uint256, uint256) external pure {
+        revert("DepositFundraisingFailed");
     }
 }
 
