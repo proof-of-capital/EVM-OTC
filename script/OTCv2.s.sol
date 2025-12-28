@@ -13,38 +13,38 @@ import {IOTC} from "../src/interfaces/IOTC.sol";
  */
 contract OTCv2Script is Script {
     // Deployment parameters - MODIFY THESE BEFORE DEPLOYMENT
-    address constant INPUT_TOKEN = address(0); // address(0) for ETH, or ERC20 token address
-    address constant OUTPUT_TOKEN = address(0); // Replace with actual output token address
+    address constant INPUT_TOKEN = address(0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d); // address(0) for ETH, or ERC20 token address
+    address constant OUTPUT_TOKEN = address(0x55d398326f99059fF775485246999027B3197955); // Replace with actual output token address
     address constant CLIENT_ADDRESS = address(0); // Replace with actual client address
 
     uint256 constant BUYBACK_PRICE = 1e18; // 1:1 ratio (adjust as needed)
-    uint256 constant MIN_OUTPUT_AMOUNT = 1000 * 1e18; // Minimum 1000 tokens
-    uint256 constant MIN_INPUT_AMOUNT = 1 ether; // Minimum 1 ETH or 1 token
+    uint256 constant MIN_OUTPUT_AMOUNT = 1000 * 1e18; // 1000 USDT
+    uint256 constant MIN_INPUT_AMOUNT = 0; // 1 USDc
 
-    bool constant IS_SUPPLY = true; // true for supply-side, false for demand-side
+    bool constant IS_SUPPLY = false; // true for supply-side, false for demand-side
 
     function run() public {
         // Get deployer (admin) address
         address admin = msg.sender;
 
         // Create supply stages array
-        IOTC.Supply[] memory supplies = new IOTC.Supply[](3);
+        IOTC.Supply[] memory supplies = new IOTC.Supply[](0);
 
-        // Configure supply stages (modify as needed)
-        supplies[0] = IOTC.Supply({
-            input: 0.5 ether, // 0.5 ETH input
-            output: 500 * 1e18 // 500 tokens output
-        });
+        // // Configure supply stages (modify as needed)
+        // supplies[0] = IOTC.Supply({
+        //     input: 0.5 ether, // 0.5 ETH input
+        //     output: 500 * 1e18 // 500 tokens output
+        // });
 
-        supplies[1] = IOTC.Supply({
-            input: 0.3 ether, // 0.3 ETH input
-            output: 300 * 1e18 // 300 tokens output
-        });
+        // supplies[1] = IOTC.Supply({
+        //     input: 0.3 ether, // 0.3 ETH input
+        //     output: 300 * 1e18 // 300 tokens output
+        // });
 
-        supplies[2] = IOTC.Supply({
-            input: 0.2 ether, // 0.2 ETH input
-            output: 200 * 1e18 // 200 tokens output
-        });
+        // supplies[2] = IOTC.Supply({
+        //     input: 0.2 ether, // 0.2 ETH input
+        //     output: 200 * 1e18 // 200 tokens output
+        // });
 
         vm.startBroadcast();
 
@@ -104,4 +104,5 @@ contract OTCv2Script is Script {
         console2.log("Client address:", CLIENT_ADDRESS);
     }
 }
+
 
