@@ -15,7 +15,7 @@ contract OTCv2Script is Script {
     // Deployment parameters - MODIFY THESE BEFORE DEPLOYMENT
     address constant INPUT_TOKEN = address(0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d); // address(0) for ETH, or ERC20 token address
     address constant OUTPUT_TOKEN = address(0x55d398326f99059fF775485246999027B3197955); // Replace with actual output token address
-    address constant CLIENT_ADDRESS = address(0); // Replace with actual client address
+    address constant CLIENT_ADDRESS = address(0xf341e3C328c22e25EF08a9a99E70EF8bDd47F7e8); // Replace with actual client address
 
     uint256 constant BUYBACK_PRICE = 1e18; // 1:1 ratio (adjust as needed)
     uint256 constant MIN_OUTPUT_AMOUNT = 1000 * 1e18; // 1000 USDT

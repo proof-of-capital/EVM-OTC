@@ -8,8 +8,8 @@ pragma solidity ^0.8.29;
 library OTCConstants {
     uint64 public constant PROPOSE_FARM_ACCOUNT_LOCK_PERIOD = 10 days;
     uint64 public constant SUPPLY_LOCK_PERIOD = 10 days;
-    uint64 public constant TOTAL_LOCK_PERIOD = 120 days; // ~4 months
-    uint64 public constant INITIAL_LOCK_PERIOD = 120 days;
+    uint64 public constant TOTAL_LOCK_PERIOD = 60 days; // ~2 months
+    uint64 public constant INITIAL_LOCK_PERIOD = 60 days;
 
     // Price nominator (for fixed point arithmetic)
     uint256 public constant NOMINATOR = 1e18;
