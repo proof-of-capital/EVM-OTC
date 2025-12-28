@@ -1,4 +1,7 @@
 {
+  "lib/EVM-DAO": {
+    "rev": "349d17766c32b5be788019770515f7c383d83d94"
+  },
   "lib/forge-std": {
     "tag": {
       "name": "v1.11.0",
