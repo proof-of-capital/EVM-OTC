@@ -236,7 +236,6 @@ interface IDAO {
     // ORDERBOOK OPERATIONS
     // ============================================
 
-
     function getCurrentPrice() external view returns (uint256);
     function getCollateralPrice(address collateral) external view returns (uint256);
     function getLaunchPriceFromPOC() external view returns (uint256);
@@ -255,7 +254,6 @@ interface IDAO {
     // ============================================
     // FUNDRAISING EXCHANGE
     // ============================================
-
 
     function finalizeExchange() external;
 

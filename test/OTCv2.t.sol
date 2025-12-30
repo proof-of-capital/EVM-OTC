@@ -1075,10 +1075,8 @@ contract OTCv2Test is Test {
         );
         _setupToSupplyProvided(otcv2_2);
 
-        IOTCv2.FarmWithdrawData memory farmData = IOTCv2.FarmWithdrawData({
-            daoAddress: testDaoAddress,
-            vaultId: testVaultId
-        });
+        IOTCv2.FarmWithdrawData memory farmData =
+            IOTCv2.FarmWithdrawData({daoAddress: testDaoAddress, vaultId: testVaultId});
 
         vm.prank(admin);
         otcv2_2.proposeDaoAccount(farmData);
@@ -1157,10 +1155,8 @@ contract OTCv2Test is Test {
         );
         _setupToSupplyProvided(otcv2_2);
 
-        IOTCv2.FarmWithdrawData memory farmData = IOTCv2.FarmWithdrawData({
-            daoAddress: testDaoAddress,
-            vaultId: testVaultId
-        });
+        IOTCv2.FarmWithdrawData memory farmData =
+            IOTCv2.FarmWithdrawData({daoAddress: testDaoAddress, vaultId: testVaultId});
 
         vm.prank(admin);
         otcv2_2.proposeDaoAccount(farmData);
