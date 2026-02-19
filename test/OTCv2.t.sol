@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.34;
+pragma solidity 0.8.34;
 
 import {OTCv2} from "../src/OTCv2.sol";
 import {OTCConstants} from "../src/libraries/OTCConstants.sol";
