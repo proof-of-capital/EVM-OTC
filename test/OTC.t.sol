@@ -55,7 +55,7 @@ contract OTCTest is Test {
             BUYBACK_PRICE,
             MIN_OUTPUT_AMOUNT,
             MIN_INPUT_AMOUNT,
-            true // IS_SUPPLY
+            true, false // IS_SUPPLY, ALLOW_PARTIAL_DELIVERY
         );
 
         vm.prank(admin);
@@ -68,7 +68,7 @@ contract OTCTest is Test {
             BUYBACK_PRICE,
             MIN_OUTPUT_AMOUNT,
             MIN_INPUT_AMOUNT,
-            true // IS_SUPPLY
+            true, false // IS_SUPPLY, ALLOW_PARTIAL_DELIVERY
         );
 
         // Deploy demand-side contract (no supplies)
@@ -83,7 +83,7 @@ contract OTCTest is Test {
             BUYBACK_PRICE,
             MIN_OUTPUT_AMOUNT,
             MIN_INPUT_AMOUNT,
-            false // IS_SUPPLY
+            false, false // IS_SUPPLY, ALLOW_PARTIAL_DELIVERY
         );
 
         // Mint tokens for testing
@@ -134,7 +134,8 @@ contract OTCTest is Test {
             BUYBACK_PRICE,
             MIN_OUTPUT_AMOUNT,
             MIN_INPUT_AMOUNT,
-            true
+            true,
+            false
         );
     }
 
@@ -155,7 +156,8 @@ contract OTCTest is Test {
             BUYBACK_PRICE,
             MIN_OUTPUT_AMOUNT,
             MIN_INPUT_AMOUNT,
-            true
+            true,
+            false
         );
     }
 
@@ -173,7 +175,8 @@ contract OTCTest is Test {
             BUYBACK_PRICE,
             MIN_OUTPUT_AMOUNT,
             MIN_INPUT_AMOUNT,
-            true
+            true,
+            false
         );
 
         // IS_SUPPLY = false but supplyCount != 0 -> InvalidSupplyCount
@@ -188,6 +191,7 @@ contract OTCTest is Test {
             BUYBACK_PRICE,
             MIN_OUTPUT_AMOUNT,
             MIN_INPUT_AMOUNT,
+            false,
             false
         );
     }
@@ -204,7 +208,8 @@ contract OTCTest is Test {
             BUYBACK_PRICE,
             MIN_OUTPUT_AMOUNT,
             MIN_INPUT_AMOUNT,
-            true
+            true,
+            false
         );
     }
 
@@ -220,7 +225,8 @@ contract OTCTest is Test {
             BUYBACK_PRICE,
             MIN_OUTPUT_AMOUNT,
             MIN_INPUT_AMOUNT,
-            true
+            true,
+            false
         );
     }
 
@@ -236,7 +242,8 @@ contract OTCTest is Test {
             BUYBACK_PRICE,
             MIN_OUTPUT_AMOUNT,
             MIN_INPUT_AMOUNT,
-            true
+            true,
+            false
         );
     }
 
@@ -252,7 +259,8 @@ contract OTCTest is Test {
             BUYBACK_PRICE,
             MIN_OUTPUT_AMOUNT,
             MIN_INPUT_AMOUNT,
-            true
+            true,
+            false
         );
     }
 
@@ -268,7 +276,8 @@ contract OTCTest is Test {
             BUYBACK_PRICE,
             MIN_OUTPUT_AMOUNT,
             MIN_INPUT_AMOUNT,
-            true
+            true,
+            false
         );
     }
 
@@ -284,7 +293,8 @@ contract OTCTest is Test {
             0, // Zero buyback price
             MIN_OUTPUT_AMOUNT,
             MIN_INPUT_AMOUNT,
-            true
+            true,
+            false
         );
     }
 
@@ -304,7 +314,8 @@ contract OTCTest is Test {
             BUYBACK_PRICE,
             MIN_OUTPUT_AMOUNT,
             MIN_INPUT_AMOUNT,
-            true
+            true,
+            false
         );
     }
 
@@ -324,7 +335,8 @@ contract OTCTest is Test {
             BUYBACK_PRICE,
             MIN_OUTPUT_AMOUNT,
             MIN_INPUT_AMOUNT,
-            true
+            true,
+            false
         );
     }
 
@@ -593,7 +605,8 @@ contract OTCTest is Test {
             BUYBACK_PRICE,
             MIN_OUTPUT_AMOUNT,
             MIN_INPUT_AMOUNT,
-            true
+            true,
+            false
         );
 
         vm.deal(user1, MIN_INPUT_AMOUNT);
@@ -899,7 +912,8 @@ contract OTCTest is Test {
             BUYBACK_PRICE,
             MIN_OUTPUT_AMOUNT,
             MIN_INPUT_AMOUNT,
-            true
+            true,
+            false
         );
 
         vm.deal(user1, MIN_INPUT_AMOUNT);
@@ -910,6 +924,98 @@ contract OTCTest is Test {
         outputToken.approve(address(otcWithRejectingAdmin), 500 ether);
         vm.expectRevert(IOTC.EthTransferFailed.selector);
         otcWithRejectingAdmin.supplyOutput();
+        vm.stopPrank();
+    }
+
+    function test_SupplyOutputPartial_RevertsWhenNotAllowed() public {
+        vm.startPrank(user1);
+        inputToken.approve(address(otc), MIN_INPUT_AMOUNT);
+        otc.depositToken(MIN_INPUT_AMOUNT);
+        vm.stopPrank();
+
+        vm.startPrank(admin);
+        outputToken.approve(address(otc), 250 ether);
+        vm.expectRevert(IOTC.PartialDeliveryNotAllowed.selector);
+        otc.supplyOutputPartial(250 ether);
+        vm.stopPrank();
+    }
+
+    function test_SupplyOutputPartial_Success() public {
+        // Deploy OTC with partial delivery allowed
+        vm.prank(admin);
+        OTC otcPartial = new OTC(
+            address(inputToken),
+            address(outputToken),
+            admin,
+            client,
+            supplies,
+            BUYBACK_PRICE,
+            MIN_OUTPUT_AMOUNT,
+            MIN_INPUT_AMOUNT,
+            true,
+            true // ALLOW_PARTIAL_DELIVERY
+        );
+
+        vm.startPrank(user1);
+        inputToken.approve(address(otcPartial), MIN_INPUT_AMOUNT);
+        otcPartial.depositToken(MIN_INPUT_AMOUNT);
+        vm.stopPrank();
+
+        // First tranche: 50 input / 500 output. Deliver 250 output (half), admin gets 25 input
+        vm.startPrank(admin);
+        outputToken.approve(address(otcPartial), 250 ether);
+        otcPartial.supplyOutputPartial(250 ether);
+        vm.stopPrank();
+
+        assertEq(otcPartial.deliveredOutputInCurrentSupply(), 250 ether);
+        assertEq(otcPartial.currentSupplyIndex(), 0);
+        assertEq(inputToken.balanceOf(admin), 1000 ether + 25 ether);
+
+        // Deliver remaining 250 output of first tranche
+        vm.startPrank(admin);
+        outputToken.approve(address(otcPartial), 250 ether);
+        otcPartial.supplyOutputPartial(250 ether);
+        vm.stopPrank();
+
+        assertEq(otcPartial.deliveredOutputInCurrentSupply(), 0);
+        assertEq(otcPartial.currentSupplyIndex(), 1);
+        assertEq(inputToken.balanceOf(admin), 1000 ether + 50 ether);
+
+        // Second tranche: deliver full remainder via supplyOutput()
+        vm.startPrank(admin);
+        outputToken.approve(address(otcPartial), 500 ether);
+        otcPartial.supplyOutput();
+        vm.stopPrank();
+
+        assertEq(otcPartial.currentState(), OTCConstants.STATE_SUPPLY_PROVIDED);
+        assertEq(otcPartial.currentSupplyIndex(), 2);
+        assertEq(inputToken.balanceOf(admin), 1000 ether + 100 ether);
+    }
+
+    function test_SupplyOutputPartial_RevertsIfAmountExceedsRemaining() public {
+        vm.prank(admin);
+        OTC otcPartial = new OTC(
+            address(inputToken),
+            address(outputToken),
+            admin,
+            client,
+            supplies,
+            BUYBACK_PRICE,
+            MIN_OUTPUT_AMOUNT,
+            MIN_INPUT_AMOUNT,
+            true,
+            true
+        );
+
+        vm.startPrank(user1);
+        inputToken.approve(address(otcPartial), MIN_INPUT_AMOUNT);
+        otcPartial.depositToken(MIN_INPUT_AMOUNT);
+        vm.stopPrank();
+
+        vm.startPrank(admin);
+        outputToken.approve(address(otcPartial), 501 ether);
+        vm.expectRevert(IOTC.InvalidPartialAmount.selector);
+        otcPartial.supplyOutputPartial(501 ether);
         vm.stopPrank();
     }
 
@@ -1084,7 +1190,8 @@ contract OTCTest is Test {
             BUYBACK_PRICE,
             MIN_OUTPUT_AMOUNT,
             MIN_INPUT_AMOUNT,
-            true
+            true,
+            false
         );
         _setupToSupplyProvided(otc2);
 
@@ -1169,7 +1276,8 @@ contract OTCTest is Test {
             BUYBACK_PRICE,
             MIN_OUTPUT_AMOUNT,
             MIN_INPUT_AMOUNT,
-            true
+            true,
+            false
         );
         _setupToSupplyProvided(otc2);
         vm.prank(admin);
@@ -1568,7 +1676,8 @@ contract OTCTest is Test {
             BUYBACK_PRICE,
             MIN_OUTPUT_AMOUNT,
             MIN_INPUT_AMOUNT,
-            true
+            true,
+            false
         );
     }
 

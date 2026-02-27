@@ -38,6 +38,8 @@ interface IOTC {
     error NotDemandContract();
     error InvalidStateForBuyback(uint8 current);
     error InvalidStateForVote(uint8 current);
+    error PartialDeliveryNotAllowed();
+    error InvalidPartialAmount();
 
     // Structs
     struct Supply {
@@ -80,6 +82,8 @@ interface IOTC {
     function proposedTime() external view returns (uint64);
     function currentState() external view returns (uint8);
     function IS_SUPPLY() external view returns (bool);
+    function ALLOW_PARTIAL_DELIVERY() external view returns (bool);
+    function deliveredOutputInCurrentSupply() external view returns (uint256);
     function supplies(uint8) external view returns (uint256 input, uint256 output);
     function withdrawData() external view returns (address farmAccount, bytes memory sendData);
 
@@ -91,6 +95,7 @@ interface IOTC {
     function withdrawInput(uint256 amount) external;
     function withdrawOutput(uint256 amount) external;
     function supplyOutput() external;
+    function supplyOutputPartial(uint256 outputAmount) external;
     function proposeDaoAccount(FarmWithdrawData calldata _withdrawData) external;
     function voteYes() external;
     function voteNo() external;

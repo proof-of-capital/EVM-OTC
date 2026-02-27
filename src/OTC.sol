@@ -34,6 +34,7 @@ contract OTC is IOTC, ReentrancyGuard {
     uint256 public immutable override MIN_OUTPUT_AMOUNT;
 
     bool public immutable override IS_SUPPLY;
+    bool public immutable override ALLOW_PARTIAL_DELIVERY;
 
     uint64 public override supplyLockEndTime;
     uint64 public override totalLockEndTime;
@@ -44,6 +45,7 @@ contract OTC is IOTC, ReentrancyGuard {
 
     mapping(uint8 => Supply) public override supplies;
     FarmWithdrawData public override withdrawData;
+    uint256 public override deliveredOutputInCurrentSupply;
 
     /**
      * @notice Constructor to initialize the OTC contract
@@ -56,6 +58,7 @@ contract OTC is IOTC, ReentrancyGuard {
      * @param _outputAmount Output token amount
      * @param _inputAmount Input token amount
      * @param _isSupply True if this is a supply-side contract
+     * @param _allowPartialDelivery True to allow partial output delivery per tranche
      */
     constructor(
         address _inputToken,
@@ -66,7 +69,8 @@ contract OTC is IOTC, ReentrancyGuard {
         uint256 _buybackPrice,
         uint256 _outputAmount,
         uint256 _inputAmount,
-        bool _isSupply
+        bool _isSupply,
+        bool _allowPartialDelivery
     ) {
         require(_outputToken != address(0), IOTC.ZeroAddress());
         require(_admin != address(0), IOTC.ZeroAddress());
@@ -86,6 +90,7 @@ contract OTC is IOTC, ReentrancyGuard {
         MIN_OUTPUT_AMOUNT = _outputAmount;
         MIN_INPUT_AMOUNT = _inputAmount;
         IS_SUPPLY = _isSupply;
+        ALLOW_PARTIAL_DELIVERY = _allowPartialDelivery;
         currentState = OTCConstants.STATE_FUNDING;
 
         uint256 outputSum = 0;
@@ -236,7 +241,7 @@ contract OTC is IOTC, ReentrancyGuard {
     }
 
     /**
-     * @notice Admin supplies the next tranche of output tokens to the contract
+     * @notice Admin supplies the remainder of the current tranche (or full tranche if no partials)
      */
     function supplyOutput() external override onlyAdmin nonReentrant {
         require(
@@ -245,25 +250,71 @@ contract OTC is IOTC, ReentrancyGuard {
         );
 
         Supply memory currentSupply = supplies[currentSupplyIndex];
+        uint256 remainingOutput = currentSupply.output - deliveredOutputInCurrentSupply;
+        require(remainingOutput > 0, IOTC.InvalidAmount());
+
+        // Proportional input for the remaining output
+        uint256 inputAmount = (remainingOutput * currentSupply.input) / currentSupply.output;
 
         // Transfer output tokens from admin
-        IERC20(OUTPUT_TOKEN).safeTransferFrom(msg.sender, address(this), currentSupply.output);
+        IERC20(OUTPUT_TOKEN).safeTransferFrom(msg.sender, address(this), remainingOutput);
 
-        emit SupplyProcessed(currentSupplyIndex, currentSupply.input, currentSupply.output);
+        emit SupplyProcessed(currentSupplyIndex, inputAmount, remainingOutput);
 
+        deliveredOutputInCurrentSupply = 0;
         currentSupplyIndex++;
 
         // Transfer input tokens/ETH to admin
         if (INPUT_TOKEN == address(0)) {
-            (bool success,) = payable(msg.sender).call{value: currentSupply.input}("");
+            (bool success,) = payable(msg.sender).call{value: inputAmount}("");
             require(success, IOTC.EthTransferFailed());
         } else {
-            IERC20(INPUT_TOKEN).safeTransfer(msg.sender, currentSupply.input);
+            IERC20(INPUT_TOKEN).safeTransfer(msg.sender, inputAmount);
         }
 
         if (currentSupplyIndex == supplyCount) {
             _changeState(OTCConstants.STATE_SUPPLY_PROVIDED);
             totalLockEndTime = uint64(block.timestamp) + OTCConstants.TOTAL_LOCK_PERIOD;
+        }
+    }
+
+    /**
+     * @notice Admin supplies a partial amount of output for the current tranche (only when ALLOW_PARTIAL_DELIVERY)
+     * @param outputAmount Amount of output tokens to supply
+     */
+    function supplyOutputPartial(uint256 outputAmount) external override onlyAdmin nonReentrant {
+        require(ALLOW_PARTIAL_DELIVERY, IOTC.PartialDeliveryNotAllowed());
+        require(
+            currentState == OTCConstants.STATE_SUPPLY_IN_PROGRESS,
+            IOTC.InvalidState(currentState, OTCConstants.STATE_SUPPLY_IN_PROGRESS)
+        );
+
+        Supply memory currentSupply = supplies[currentSupplyIndex];
+        uint256 remainingOutput = currentSupply.output - deliveredOutputInCurrentSupply;
+        require(outputAmount > 0 && outputAmount <= remainingOutput, IOTC.InvalidPartialAmount());
+
+        uint256 inputAmount = (outputAmount * currentSupply.input) / currentSupply.output;
+
+        IERC20(OUTPUT_TOKEN).safeTransferFrom(msg.sender, address(this), outputAmount);
+
+        emit SupplyProcessed(currentSupplyIndex, inputAmount, outputAmount);
+
+        deliveredOutputInCurrentSupply += outputAmount;
+
+        if (INPUT_TOKEN == address(0)) {
+            (bool success,) = payable(msg.sender).call{value: inputAmount}("");
+            require(success, IOTC.EthTransferFailed());
+        } else {
+            IERC20(INPUT_TOKEN).safeTransfer(msg.sender, inputAmount);
+        }
+
+        if (deliveredOutputInCurrentSupply == currentSupply.output) {
+            deliveredOutputInCurrentSupply = 0;
+            currentSupplyIndex++;
+            if (currentSupplyIndex == supplyCount) {
+                _changeState(OTCConstants.STATE_SUPPLY_PROVIDED);
+                totalLockEndTime = uint64(block.timestamp) + OTCConstants.TOTAL_LOCK_PERIOD;
+            }
         }
     }
 
