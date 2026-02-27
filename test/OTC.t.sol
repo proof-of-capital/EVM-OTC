@@ -55,7 +55,8 @@ contract OTCTest is Test {
             BUYBACK_PRICE,
             MIN_OUTPUT_AMOUNT,
             MIN_INPUT_AMOUNT,
-            true, false // IS_SUPPLY, ALLOW_PARTIAL_DELIVERY
+            true,
+            false // IS_SUPPLY, ALLOW_PARTIAL_DELIVERY
         );
 
         vm.prank(admin);
@@ -68,7 +69,8 @@ contract OTCTest is Test {
             BUYBACK_PRICE,
             MIN_OUTPUT_AMOUNT,
             MIN_INPUT_AMOUNT,
-            true, false // IS_SUPPLY, ALLOW_PARTIAL_DELIVERY
+            true,
+            false // IS_SUPPLY, ALLOW_PARTIAL_DELIVERY
         );
 
         // Deploy demand-side contract (no supplies)
@@ -83,7 +85,8 @@ contract OTCTest is Test {
             BUYBACK_PRICE,
             MIN_OUTPUT_AMOUNT,
             MIN_INPUT_AMOUNT,
-            false, false // IS_SUPPLY, ALLOW_PARTIAL_DELIVERY
+            false,
+            false // IS_SUPPLY, ALLOW_PARTIAL_DELIVERY
         );
 
         // Mint tokens for testing

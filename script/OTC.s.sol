@@ -95,7 +95,8 @@ contract OTCScript is Script {
             BUYBACK_PRICE,
             MIN_OUTPUT_AMOUNT,
             MIN_INPUT_AMOUNT,
-            false, false // IS_SUPPLY = false, ALLOW_PARTIAL_DELIVERY for demand-side
+            false,
+            false // IS_SUPPLY = false, ALLOW_PARTIAL_DELIVERY for demand-side
         );
 
         vm.stopBroadcast();
